@@ -1,7 +1,7 @@
 // Data Export, Import, CSV and Print Service
 import { z } from 'zod';
 import { formatRupiah } from '../domain/accounting';
-import { Account, Category, Debt, DebtPayment, Person, Transaction } from '../domain/types';
+import { Account, Category, Debt, DebtPayment, Person, Pocket, Transaction } from '../domain/types';
 
 export const BackupSchema = z.object({
   version: z.number(),
@@ -22,6 +22,8 @@ export const BackupSchema = z.object({
     achievements: z.array(z.any()).optional(),
     trash: z.array(z.any()).optional(),
     auditLogs: z.array(z.any()).optional(),
+    pockets: z.array(z.any()).optional(),
+    autoAllocationRules: z.array(z.any()).optional(),
   }),
 });
 
@@ -47,17 +49,27 @@ export const dataTransferService = {
    */
   generateTransactionsCsv(
     transactions: Transaction[],
-    accounts: Account[],
-    categories: Category[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    accountsOrCategories: any[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    categoriesOrAccounts: any[],
+    pockets: Pocket[] = []
   ): string {
+    const isFirstAccounts =
+      accountsOrCategories.length > 0 && 'saldoAwal' in accountsOrCategories[0];
+    const accounts: Account[] = isFirstAccounts ? accountsOrCategories : categoriesOrAccounts;
+    const categories: Category[] = isFirstAccounts ? categoriesOrAccounts : accountsOrCategories;
+
     const accMap = new Map(accounts.map((a) => [a.id, a.nama]));
     const catMap = new Map(categories.map((c) => [c.id, c.nama]));
+    const posMap = new Map(pockets.map((p) => [p.id, p.nama]));
 
     const headers = [
       'ID',
       'Tanggal',
       'Jenis',
       'Tabungan',
+      'Pos',
       'Kategori',
       'Nominal (Rp)',
       'Catatan',
@@ -70,6 +82,7 @@ export const dataTransferService = {
         t.tanggal.slice(0, 10),
         t.jenis,
         `"${accMap.get(t.tabunganId) || 'Tidak diketahui'}"`,
+        `"${posMap.get(t.posId || '') || 'Belum dialokasikan'}"`,
         `"${catMap.get(t.kategoriId || '') || 'Lainnya'}"`,
         t.nominal,
         `"${(t.catatan || '').replace(/"/g, '""')}"`,
@@ -176,5 +189,15 @@ export const dataTransferService = {
     }
     msg += `. Terima kasih banyak ya!`;
     return msg;
+  },
+
+  // Aliases for compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  exportTransactionsCsv(transactions: any[], accounts: any[], categories: any[], pockets: any[] = []): string {
+    return this.generateTransactionsCsv(transactions, accounts, categories, pockets);
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  exportDebtsCsv(debts: any[], people: any[], payments: any[]): string {
+    return this.generateDebtsCsv(debts, people, payments);
   },
 };

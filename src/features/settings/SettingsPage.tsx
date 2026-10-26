@@ -12,7 +12,7 @@ import {
   HardDrive,
   Plus,
 } from 'lucide-react';
-import { AppSettings, Category, ColorPreset, ThemeMode } from '../../domain/types';
+import { Account, AppSettings, AutoAllocationRule, Category, ColorPreset, Pocket, ThemeMode } from '../../domain/types';
 import { PALETTES, applyTheme } from '../../styles/theme';
 import { soundService } from '../../services/audio';
 import { securityService } from '../../services/security';
@@ -21,10 +21,15 @@ import { repository } from '../../db/repository';
 import { SoundButton } from '../../components/SoundButton';
 import { Modal } from '../../components/Modal';
 import { useToast } from '../../context/ToastContext';
+import { AppIconModal } from './AppIconModal';
+import { AutoAllocationRulesSection } from './AutoAllocationRulesSection';
 
 interface SettingsPageProps {
   settings: AppSettings;
   categories: Category[];
+  accounts?: Account[];
+  pockets?: Pocket[];
+  autoAllocationRules?: AutoAllocationRule[];
   onRefresh: () => void;
   onNavigate?: (path: string) => void;
 }
@@ -32,10 +37,16 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   settings,
   categories,
+  accounts = [],
+  pockets = [],
+  autoAllocationRules = [],
   onRefresh,
   onNavigate: _onNavigate,
 }) => {
   const { showToast } = useToast();
+
+  // App icon modal
+  const [appIconModalOpen, setAppIconModalOpen] = useState(false);
 
   // Storage persistent status
   const [isPersisted, setIsPersisted] = useState<boolean>(false);
@@ -106,6 +117,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       pinSalt: undefined,
     });
     showToast({ type: 'info', message: 'Kunci PIN dinonaktifkan' });
+    onRefresh();
+  };
+
+  const handleSaveCustomIcon = async (iconDataUrl?: string) => {
+    await repository.updateSettings({
+      customAppIcon: iconDataUrl,
+    });
+    showToast({
+      type: 'success',
+      message: iconDataUrl
+        ? 'Ikon logo aplikasi kustom berhasil diterapkan'
+        : 'Ikon logo dikembalikan ke standar project',
+    });
     onRefresh();
   };
 
@@ -300,7 +324,44 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             ))}
           </div>
         </div>
+
+        {/* App Icon Customization */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
+              {settings.customAppIcon ? (
+                <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <img src="/pwa-192x192.png" alt="Logo" className="w-7 h-7 object-contain" />
+              )}
+            </div>
+            <div>
+              <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
+                Ikon Aplikasi
+              </span>
+              <span className="text-[11px] text-slate-500">
+                {settings.customAppIcon ? 'Ikon kustom tersimpan' : 'Ikon bawaan project'}
+              </span>
+            </div>
+          </div>
+          <SoundButton
+            variant="outline"
+            size="sm"
+            sound="click"
+            onClick={() => setAppIconModalOpen(true)}
+          >
+            <span>Ubah Ikon</span>
+          </SoundButton>
+        </div>
       </div>
+
+      {/* SECTION 1B: AUTO ALLOCATION RULES */}
+      <AutoAllocationRulesSection
+        accounts={accounts}
+        pockets={pockets}
+        rules={autoAllocationRules}
+        onRefresh={onRefresh}
+      />
 
       {/* SECTION 2: AUDIO & HAPTICS */}
       <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -798,6 +859,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </div>
       </Modal>
+
+      {/* App Icon Customization Modal */}
+      <AppIconModal
+        isOpen={appIconModalOpen}
+        onClose={() => setAppIconModalOpen(false)}
+        currentIcon={settings.customAppIcon}
+        onSave={handleSaveCustomIcon}
+      />
     </div>
   );
 };

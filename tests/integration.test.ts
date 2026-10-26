@@ -3,7 +3,12 @@ import { db } from '../src/db/database';
 import { repository } from '../src/db/repository';
 import { securityService } from '../src/services/security';
 import { dataTransferService } from '../src/services/dataTransfer';
-import { calculateAccountBalance, calculateDebtSummary } from '../src/domain/accounting';
+import {
+  calculateAccountBalance,
+  calculateDebtSummary,
+  calculatePocketBalance,
+  verifyPocketInvariant,
+} from '../src/domain/accounting';
 
 describe('End-to-End Integration Tests', () => {
   beforeEach(async () => {
@@ -17,6 +22,8 @@ describe('End-to-End Integration Tests', () => {
     await db.trash.clear();
     await db.auditLogs.clear();
     await db.settings.clear();
+    await db.pockets.clear();
+    await db.autoAllocationRules.clear();
   });
 
   it('verifies clean fresh start has ZERO dummy/sample data', async () => {
@@ -229,5 +236,190 @@ describe('End-to-End Integration Tests', () => {
     const accs = await repository.getAccounts();
     expect(accs).toHaveLength(1);
     expect(accs[0].nama).toBe('Tabungan Utama');
+  });
+
+  it('automatically creates system pocket "Belum dialokasikan" upon account creation', async () => {
+    const acc = await repository.createAccount({
+      nama: 'Mandiri Prioritas',
+      ikon: 'CreditCard',
+      warna: '#0284c7',
+      saldoAwal: 300000,
+      diarsipkan: false,
+    });
+
+    const pockets = await repository.getPockets(acc.id);
+    expect(pockets).toHaveLength(1);
+    expect(pockets[0].isSystem).toBe(true);
+    expect(pockets[0].nama).toBe('Belum dialokasikan');
+    expect(pockets[0].id).toBe(`pos_sys_${acc.id}`);
+
+    // Verify initial balance of system pocket equals initial account balance
+    const bal = calculatePocketBalance(pockets[0], acc, []);
+    expect(bal).toBe(300000);
+  });
+
+  it('handles pocket CRUD, reordering, and balance transfer on delete', async () => {
+    const acc = await repository.createAccount({
+      nama: 'Jago Utama',
+      ikon: 'Wallet',
+      warna: '#7c3aed',
+      saldoAwal: 1000000,
+      diarsipkan: false,
+    });
+
+    const sysPos = (await repository.getPockets(acc.id)).find((p) => p.isSystem)!;
+
+    // Create custom pockets
+    const pocketJajan = await repository.createPocket({
+      tabunganId: acc.id,
+      nama: 'Jajan Sore',
+      ikon: 'Coffee',
+      warna: '#f59e0b',
+      batasBulanan: 300000,
+      urutan: 1,
+      diarsipkan: false,
+    });
+
+    const pocketLiburan = await repository.createPocket({
+      tabunganId: acc.id,
+      nama: 'Dana Liburan',
+      ikon: 'Palmtree',
+      warna: '#10b981',
+      target: 5000000,
+      urutan: 2,
+      diarsipkan: false,
+    });
+
+    // Move 400.000 from sysPos to pocketJajan
+    await repository.moveFundsBetweenPockets(
+      acc.id,
+      sysPos.id,
+      pocketJajan.id,
+      400000,
+      'Alokasi jajan'
+    );
+
+    let allTxs = await repository.getTransactions();
+    const jajanBal = calculatePocketBalance(pocketJajan, acc, allTxs);
+    const sysBal = calculatePocketBalance(sysPos, acc, allTxs);
+
+    expect(jajanBal).toBe(400000);
+    expect(sysBal).toBe(600000);
+
+    // Reorder pockets
+    await repository.reorderPockets([pocketLiburan.id, pocketJajan.id]);
+    const reordered = await repository.getPockets(acc.id);
+    expect(reordered.find((p) => p.id === pocketLiburan.id)?.urutan).toBe(0);
+    expect(reordered.find((p) => p.id === pocketJajan.id)?.urutan).toBe(1);
+
+    // Delete pocketJajan with mandatory transfer of remaining 400.000 to pocketLiburan
+    await repository.deletePocket(pocketJajan.id, pocketLiburan.id);
+
+    allTxs = await repository.getTransactions();
+    const liburanBal = calculatePocketBalance(pocketLiburan, acc, allTxs);
+    expect(liburanBal).toBe(400000);
+
+    const activePockets = await repository.getPockets(acc.id);
+    expect(activePockets.find((p) => p.id === pocketJajan.id)).toBeUndefined();
+
+    // Verify Invariant: Account balance is still 1.000.000
+    const inv = verifyPocketInvariant(acc, activePockets, allTxs);
+    expect(inv.isValid).toBe(true);
+    expect(inv.accountBalance).toBe(1000000);
+    expect(inv.sumPockets).toBe(1000000);
+  });
+
+  it('supports paired inter-account transfer specifying source and target pockets', async () => {
+    const acc1 = await repository.createAccount({
+      nama: 'Bank A',
+      ikon: 'Building',
+      warna: '#0ea5e9',
+      saldoAwal: 500000,
+      diarsipkan: false,
+    });
+    const acc2 = await repository.createAccount({
+      nama: 'Bank B',
+      ikon: 'Building',
+      warna: '#22c55e',
+      saldoAwal: 100000,
+      diarsipkan: false,
+    });
+
+    const sys1 = (await repository.getPockets(acc1.id))[0];
+
+    const pocketEmergency = await repository.createPocket({
+      tabunganId: acc2.id,
+      nama: 'Dana Darurat',
+      ikon: 'Shield',
+      warna: '#ef4444',
+      urutan: 1,
+      diarsipkan: false,
+    });
+
+    // Transfer 150.000 from Bank A (sys1) to Bank B (pocketEmergency)
+    await repository.createTransfer(
+      acc1.id,
+      acc2.id,
+      150000,
+      new Date().toISOString(),
+      'Isi dana darurat',
+      sys1.id,
+      pocketEmergency.id
+    );
+
+    const allTxs = await repository.getTransactions();
+    const balAcc1 = calculateAccountBalance(acc1.saldoAwal, allTxs, acc1.id);
+    const balAcc2 = calculateAccountBalance(acc2.saldoAwal, allTxs, acc2.id);
+
+    expect(balAcc1).toBe(350000);
+    expect(balAcc2).toBe(250000);
+
+    const balEmergency = calculatePocketBalance(pocketEmergency, acc2, allTxs);
+    expect(balEmergency).toBe(150000);
+  });
+
+  it('manages auto-allocation rules CRUD and full backup restore including pockets', async () => {
+    const acc = await repository.createAccount({
+      nama: 'Tabungan Auto',
+      ikon: 'Wallet',
+      warna: '#6366f1',
+      saldoAwal: 200000,
+      diarsipkan: false,
+    });
+
+    const pos = await repository.createPocket({
+      tabunganId: acc.id,
+      nama: 'Investasi',
+      ikon: 'TrendingUp',
+      warna: '#10b981',
+      urutan: 1,
+      diarsipkan: false,
+    });
+
+    const rule = await repository.createAutoAllocationRule({
+      nama: 'Gaji Bulanan',
+      tabunganId: acc.id,
+      aktif: true,
+      items: [{ posId: pos.id, type: 'persen', value: 25 }],
+    });
+
+    expect(rule.id).toBeDefined();
+    expect(rule.items[0].value).toBe(25);
+
+    // Export and check pockets + rules in export JSON
+    const exported = await repository.exportFullData();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const backupData = exported.data as any;
+    expect(backupData.pockets.length).toBeGreaterThan(0);
+    expect(backupData.autoAllocationRules.length).toBe(1);
+
+    // CSV export has Pos column
+    const csv = await dataTransferService.exportTransactionsCsv(
+      backupData.transactions,
+      backupData.categories,
+      backupData.accounts,
+      backupData.pockets
+    );
+    expect(csv).toContain('Pos');
   });
 });

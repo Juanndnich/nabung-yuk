@@ -2,6 +2,42 @@
 
 Semua perubahan penting pada project **Nubung Yuk** dicatat dalam dokumen ini. Format mengacu pada [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] - 2026-10-26
+
+### Ditambahkan
+- **Fitur Pos Tabungan (Envelope Budgeting)**:
+  - Pembagian tabungan ke pos-pos kustom (nama, ikon lucide, warna, batas bulanan, target, urutan, arsip) tanpa data bawaan.
+  - Pos sistem **"Belum dialokasikan"** otomatis per tabungan untuk menampung saldo yang belum dibagi.
+  - Invarian ketat: saldo tabungan = jumlah seluruh pos + saldo belum dialokasikan.
+  - Fitur **Pindah Dana Antar Pos** (mutasi internal berpasangan, bukan pemasukan/pengeluaran).
+  - Pilihan alokasi pada pencatatan pemasukan: mode tunggal, aturan bagi otomatis, atau pembagian manual (split).
+  - Peringatan defisit saldo pos pada pengeluaran dan peringatan progres batas bulanan pos.
+  - Tampilan tab **Pos Tabungan** di Buku Tabungan dengan kartu interaktif, progres batas/target, modal tambah/edit/reorder pos, dan pemindahan saldo wajib saat pos diarsipkan atau dihapus.
+  - Wizard onboarding: langkah tur pengenalan konsep Pos Tabungan (amplop).
+- **Aturan Bagi Otomatis**:
+  - CRUD aturan bagi otomatis di Pengaturan > Pos Tabungan.
+  - Mendukung pembagian berbasis persentase (total >100% ditolak) dan nominal riil.
+  - Sisa pembulatan atau alokasi otomatis dialihkan secara transparan ke pos sistem "Belum dialokasikan".
+  - Pratinjau interaktif hasil alokasi sebelum aturan disimpan.
+- **Visualisasi Statistik & Beranda**:
+  - Donat komposisi saldo per pos tabungan.
+  - Batang pengeluaran per pos berdasarkan filter periode.
+  - Kartu indikator status batas bulanan pos (Aman, Hampir Habis, Melebihi Batas).
+  - Penjelasan UI hubungan pos dengan anggaran bulanan kategori untuk mencegah penghitungan ganda.
+- **Generator Ikon Otomatis & Kustomisasi Ikon (Bagian 13 AGENTS.md)**:
+  - Generator skrip terprogram `scripts/generate-icons.js` berbasis `sharp` (`npm run icons`).
+  - Menghasilkan favicon (16px, 32px, .ico), PWA icons (192px, 512px), maskable icon (safe zone 80%), apple-touch-icon (180px), dan shortcut icons dari berkas master `public/branding/icon-source.png`.
+  - Placeholder sumber ikon berlabel jelas jika berkas master belum disediakan.
+  - Fitur kustomisasi ikon logo di dalam aplikasi dengan upload + crop 1:1 via `react-easy-crop`.
+- **Database & Migrasi Dexie v2**:
+  - Peningkatan skema Dexie ke Versi 2 (`pockets`, `autoAllocationRules`, indeks `posId`/`targetPosId`).
+  - Pencadangan otomatis snapshot pra-migrasi ke `localStorage`.
+  - Migrasi data lama otomatis membuat pos sistem `pos_sys_${tabunganId}` dan mengaitkan seluruh transaksi lama tanpa mengubah nominal saldo tabungan.
+  - Ekspor/impor cadangan JSON dan ekspor CSV kini menyertakan kolom Pos Tabungan.
+- **Pengujian (Testing)**:
+  - 15 pengujian unit domain akuntansi & pos tabungan.
+  - 11 pengujian integrasi database Dexie, migrasi v2, transfer pos, enkripsi cadangan, dan siklus data (total 26 tests lulus).
+
 ## [1.0.0] - 2026-10-26
 
 ### Ditambahkan

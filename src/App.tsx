@@ -4,11 +4,13 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import {
   Account,
   AppSettings,
+  AutoAllocationRule,
   Category,
   Debt,
   DebtPayment,
   MonthlyBudget,
   Person,
+  Pocket,
   RecurringTransaction,
   SavingsGoal,
   Tag,
@@ -52,6 +54,8 @@ export const AppContent: React.FC = () => {
   const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [trashItems, setTrashItems] = useState<TrashItem[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
+  const [pockets, setPockets] = useState<Pocket[]>([]);
+  const [autoAllocationRules, setAutoAllocationRules] = useState<AutoAllocationRule[]>([]);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -94,6 +98,8 @@ export const AppContent: React.FC = () => {
         rec,
         trash,
         ppl,
+        pock,
+        rules,
       ] = await Promise.all([
         repository.getSettings(),
         repository.getAccounts(),
@@ -107,6 +113,8 @@ export const AppContent: React.FC = () => {
         repository.getRecurringTransactions(),
         repository.getTrashItems(),
         repository.getPeople(),
+        repository.getPockets(),
+        repository.getAutoAllocationRules(),
       ]);
 
       setSettings(s);
@@ -121,6 +129,8 @@ export const AppContent: React.FC = () => {
       setRecurring(rec);
       setTrashItems(trash);
       setPeople(ppl);
+      setPockets(pock);
+      setAutoAllocationRules(rules);
 
       // Apply theme & sound config
       applyTheme(s.theme, s.colorPreset, s.customAccent);
@@ -239,6 +249,7 @@ export const AppContent: React.FC = () => {
                 transactions={transactions}
                 debts={debts}
                 categories={categories}
+                pockets={pockets}
                 savingsGoals={savingsGoals}
                 budgets={budgets}
                 onOpenQuickAction={handleOpenQuickAction}
@@ -254,6 +265,7 @@ export const AppContent: React.FC = () => {
                 accounts={accounts}
                 transactions={transactions}
                 categories={categories}
+                pockets={pockets}
                 tags={tags}
                 onRefresh={refreshData}
                 onOpenQuickAction={handleOpenQuickAction}
@@ -317,6 +329,7 @@ export const AppContent: React.FC = () => {
                 settings={settings}
                 transactions={transactions}
                 categories={categories}
+                pockets={pockets}
               />
             }
           />
@@ -335,6 +348,9 @@ export const AppContent: React.FC = () => {
               <SettingsPage
                 settings={settings}
                 categories={categories}
+                accounts={accounts}
+                pockets={pockets}
+                autoAllocationRules={autoAllocationRules}
                 onRefresh={refreshData}
                 onNavigate={navigate}
               />
@@ -344,6 +360,7 @@ export const AppContent: React.FC = () => {
             path="/tentang"
             element={
               <AboutPage
+                settings={settings}
                 onRestartTour={() => setOnboardingOpen(true)}
               />
             }
@@ -359,6 +376,9 @@ export const AppContent: React.FC = () => {
         accounts={accounts}
         categories={categories}
         people={people}
+        pockets={pockets}
+        autoAllocationRules={autoAllocationRules}
+        transactions={transactions}
         onSuccess={refreshData}
       />
 

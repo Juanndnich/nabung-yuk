@@ -12,13 +12,18 @@ import {
   calculateGoalProgress,
   calculateBudgetStatus,
   calculateSavingsStreak,
+  calculatePocketBalance,
+  verifyPocketInvariant,
+  calculateAutoAllocation,
+  checkPocketExpenseOverdraft,
+  checkPocketMonthlyLimit,
 } from '../src/domain/accounting';
 import {
   getPeriodDateRange,
   groupTransactionsByDay,
   aggregateCategoryBreakdown,
 } from '../src/domain/statistics';
-import { Transaction } from '../src/domain/types';
+import { Account, AutoAllocationRule, Pocket, Transaction } from '../src/domain/types';
 
 describe('Domain Accounting Logic', () => {
   it('correctly handles integer rupiah conversions and formatting', () => {
@@ -234,5 +239,240 @@ describe('Domain Statistics & Grouping', () => {
     const rangeMonth = getPeriodDateRange('bulan_ini', ref);
     expect(rangeMonth.startDate).toBe('2026-10-01');
     expect(rangeMonth.endDate).toBe('2026-10-31');
+  });
+});
+
+describe('Pos Tabungan (Envelope Budgeting) Domain Logic', () => {
+  const mockAccount: Account = {
+    id: 'acc-main',
+    nama: 'BCA Utama',
+    ikon: 'Wallet',
+    warna: '#0284c7',
+    saldoAwal: 500000,
+    diarsipkan: false,
+    isDeleted: false,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  const sysPocket: Pocket = {
+    id: 'pos_sys_acc-main',
+    tabunganId: 'acc-main',
+    nama: 'Belum dialokasikan',
+    ikon: 'Inbox',
+    warna: '#94a3b8',
+    urutan: 0,
+    diarsipkan: false,
+    isSystem: true,
+    isDeleted: false,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  const foodPocket: Pocket = {
+    id: 'pos-food',
+    tabunganId: 'acc-main',
+    nama: 'Makan & Jajan',
+    ikon: 'Utensils',
+    warna: '#f97316',
+    batasBulanan: 400000,
+    urutan: 1,
+    diarsipkan: false,
+    isSystem: false,
+    isDeleted: false,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  const billPocket: Pocket = {
+    id: 'pos-bills',
+    tabunganId: 'acc-main',
+    nama: 'Tagihan Listrik',
+    ikon: 'Zap',
+    warna: '#eab308',
+    target: 200000,
+    urutan: 2,
+    diarsipkan: false,
+    isSystem: false,
+    isDeleted: false,
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  };
+
+  const allPockets = [sysPocket, foodPocket, billPocket];
+
+  it('calculates pocket balances correctly and preserves the strict account invariant', () => {
+    // Initial account balance is 500.000. No transactions yet:
+    // sysPocket should have 500.000, others 0
+    expect(calculatePocketBalance(sysPocket, mockAccount, [])).toBe(500000);
+    expect(calculatePocketBalance(foodPocket, mockAccount, [])).toBe(0);
+
+    const invInitial = verifyPocketInvariant(mockAccount, allPockets, []);
+    expect(invInitial.isValid).toBe(true);
+    expect(invInitial.accountBalance).toBe(500000);
+    expect(invInitial.sumPockets).toBe(500000);
+
+    // Move 200.000 from sysPocket to foodPocket
+    const txMove: Transaction = {
+      id: 'tx-move-1',
+      tabunganId: 'acc-main',
+      jenis: 'pindah_pos',
+      nominal: 200000,
+      posId: sysPocket.id,
+      targetPosId: foodPocket.id,
+      tanggal: '2026-10-26T10:00:00Z',
+      isDeleted: false,
+      createdAt: '2026-10-26T10:00:00Z',
+      updatedAt: '2026-10-26T10:00:00Z',
+    };
+
+    // Expense 50.000 from foodPocket
+    const txExpense: Transaction = {
+      id: 'tx-exp-1',
+      tabunganId: 'acc-main',
+      jenis: 'keluar',
+      nominal: 50000,
+      posId: foodPocket.id,
+      tanggal: '2026-10-26T12:00:00Z',
+      isDeleted: false,
+      createdAt: '2026-10-26T12:00:00Z',
+      updatedAt: '2026-10-26T12:00:00Z',
+    };
+
+    const txs = [txMove, txExpense];
+
+    // Account balance: 500k initial - 50k expense = 450.000
+    const accBal = calculateAccountBalance(mockAccount.saldoAwal, txs, mockAccount.id);
+    expect(accBal).toBe(450000);
+
+    // sysPocket: 500k - 200k moved = 300.000
+    expect(calculatePocketBalance(sysPocket, mockAccount, txs)).toBe(300000);
+
+    // foodPocket: 0 + 200k in - 50k out = 150.000
+    expect(calculatePocketBalance(foodPocket, mockAccount, txs)).toBe(150000);
+
+    // Invariant check: 300k + 150k + 0 = 450k === account balance
+    const invAfter = verifyPocketInvariant(mockAccount, allPockets, txs);
+    expect(invAfter.isValid).toBe(true);
+    expect(invAfter.sumPockets).toBe(450000);
+  });
+
+  it('calculates auto allocation with percentages, rejects >100%, and allocates remainder to system pocket', () => {
+    const percentRule: AutoAllocationRule = {
+      id: 'rule-pct',
+      nama: 'Gajian 50-30-20',
+      tabunganId: 'acc-main',
+      aktif: true,
+      isDeleted: false,
+      items: [
+        { posId: foodPocket.id, type: 'persen', value: 50 },
+        { posId: billPocket.id, type: 'persen', value: 30 },
+      ],
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    // Income of 1.000.000
+    // Food: 50% = 500.000
+    // Bills: 30% = 300.000
+    // Remainder: 20% (200.000) goes to Belum dialokasikan (sysPocket)
+    const result = calculateAutoAllocation(1000000, percentRule, allPockets);
+    expect(result.isValid).toBe(true);
+    expect(result.items.find((i) => i.posId === foodPocket.id)?.nominal).toBe(500000);
+    expect(result.items.find((i) => i.posId === billPocket.id)?.nominal).toBe(300000);
+    expect(result.sisaBelumDialokasikan).toBe(200000);
+    expect(result.totalDialokasikan).toBe(800000);
+
+    // Rejection when percentage > 100%
+    const invalidRule: AutoAllocationRule = {
+      id: 'rule-invalid',
+      nama: 'Aturan Salah',
+      tabunganId: 'acc-main',
+      aktif: true,
+      isDeleted: false,
+      items: [
+        { posId: foodPocket.id, type: 'persen', value: 70 },
+        { posId: billPocket.id, type: 'persen', value: 40 },
+      ],
+      createdAt: '',
+      updatedAt: '',
+    };
+    const invalidResult = calculateAutoAllocation(1000000, invalidRule, allPockets);
+    expect(invalidResult.isValid).toBe(false);
+    expect(invalidResult.errorMessage).toContain('100%');
+  });
+
+  it('calculates auto allocation with exact nominal and allocates remainder', () => {
+    const nominalRule: AutoAllocationRule = {
+      id: 'rule-nom',
+      nama: 'Bagi Nominal',
+      tabunganId: 'acc-main',
+      aktif: true,
+      isDeleted: false,
+      items: [
+        { posId: foodPocket.id, type: 'nominal', value: 150000 },
+        { posId: billPocket.id, type: 'nominal', value: 50000 },
+      ],
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const result = calculateAutoAllocation(300000, nominalRule, allPockets);
+    expect(result.isValid).toBe(true);
+    expect(result.items.find((i) => i.posId === foodPocket.id)?.nominal).toBe(150000);
+    expect(result.items.find((i) => i.posId === billPocket.id)?.nominal).toBe(50000);
+    expect(result.sisaBelumDialokasikan).toBe(100000);
+    expect(result.totalDialokasikan).toBe(200000);
+  });
+
+  it('triggers warnings for pocket expense overdraft and monthly limit', () => {
+    // Current pocket balance: 50.000
+    const overdraftCheck = checkPocketExpenseOverdraft(50000, 80000);
+    expect(overdraftCheck.isOverdrawn).toBe(true);
+    expect(overdraftCheck.defisit).toBe(30000);
+
+    const safeOverdraftCheck = checkPocketExpenseOverdraft(50000, 30000);
+    expect(safeOverdraftCheck.isOverdrawn).toBe(false);
+    expect(safeOverdraftCheck.defisit).toBe(0);
+
+    // Monthly limit check for foodPocket (limit 400.000)
+    const txsInMonth: Transaction[] = [
+      {
+        id: '1',
+        tabunganId: 'acc-main',
+        posId: foodPocket.id,
+        jenis: 'keluar',
+        nominal: 350000,
+        tanggal: '2026-10-10',
+        isDeleted: false,
+        createdAt: '',
+        updatedAt: '',
+      },
+    ];
+
+    const limitStatus = checkPocketMonthlyLimit(foodPocket, txsInMonth);
+    expect(limitStatus.batas).toBe(400000);
+    expect(limitStatus.terpakai).toBe(350000);
+    expect(limitStatus.persen).toBe(88);
+    expect(limitStatus.isNearLimit).toBe(true);
+    expect(limitStatus.isExceeded).toBe(false);
+
+    // Adding more expense to exceed 100%
+    txsInMonth.push({
+      id: '2',
+      tabunganId: 'acc-main',
+      posId: foodPocket.id,
+      jenis: 'keluar',
+      nominal: 100000,
+      tanggal: '2026-10-15',
+      isDeleted: false,
+      createdAt: '',
+      updatedAt: '',
+    });
+
+    const exceededStatus = checkPocketMonthlyLimit(foodPocket, txsInMonth);
+    expect(exceededStatus.terpakai).toBe(450000);
+    expect(exceededStatus.persen).toBe(113);
+    expect(exceededStatus.isExceeded).toBe(true);
   });
 });

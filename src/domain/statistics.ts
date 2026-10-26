@@ -1,6 +1,6 @@
 // Domain Statistics, Periods, and Grouping Logic
-import { Category, Transaction } from './types';
-import { calculatePeriodTotals, toIntegerRupiah } from './accounting';
+import { Account, Category, Pocket, Transaction } from './types';
+import { calculatePeriodTotals, calculatePocketBalance, toIntegerRupiah } from './accounting';
 
 export type PeriodFilter =
   | 'hari_ini'
@@ -321,3 +321,108 @@ export function calculateAdvancedStats(
     breakdowns,
   };
 }
+
+export interface PocketBalanceItem {
+  posId: string;
+  nama: string;
+  warna: string;
+  ikon: string;
+  saldo: number;
+  isSystem: boolean;
+  persentase: number; // percentage of total account balance
+}
+
+/**
+ * Aggregates current balance per pocket for an account
+ */
+export function aggregatePocketBalances(
+  account: Account,
+  pockets: Pocket[],
+  transactions: Transaction[]
+): PocketBalanceItem[] {
+  const accountPockets = pockets.filter((p) => p.tabunganId === account.id && !p.isDeleted);
+  const items = accountPockets.map((p) => {
+    const saldo = calculatePocketBalance(p, account, transactions);
+    return {
+      posId: p.id,
+      nama: p.nama,
+      warna: p.warna || '#64748b',
+      ikon: p.ikon,
+      saldo,
+      isSystem: p.isSystem,
+      persentase: 0,
+    };
+  });
+
+  const totalPositive = items.reduce((sum, it) => sum + (it.saldo > 0 ? it.saldo : 0), 0);
+  if (totalPositive > 0) {
+    items.forEach((it) => {
+      it.persentase = it.saldo > 0 ? Math.round((it.saldo / totalPositive) * 100) : 0;
+    });
+  }
+
+  return items;
+}
+
+export interface PocketExpenseItem {
+  posId: string;
+  nama: string;
+  warna: string;
+  ikon: string;
+  total: number;
+  persentase: number;
+}
+
+/**
+ * Aggregates expenses per pocket for a given set of transactions (or filtered range).
+ * Note: 'pindah_pos' and 'transfer' are completely excluded!
+ */
+export function aggregatePocketExpenses(
+  transactions: Transaction[],
+  pockets: Pocket[],
+  dateRange?: DateRange,
+  tabunganId?: string
+): PocketExpenseItem[] {
+  let list = transactions.filter((t) => !t.isDeleted);
+  if (tabunganId) {
+    list = list.filter((t) => t.tabunganId === tabunganId);
+  }
+  if (dateRange) {
+    list = filterTransactionsByRange(list, dateRange);
+  }
+
+  const pocketMap = new Map<string, Pocket>(pockets.map((p) => [p.id, p]));
+  const totals = new Map<string, number>();
+
+  for (const tx of list) {
+    if (tx.jenis === 'keluar') {
+      const pId = tx.posId || 'unassigned';
+      totals.set(pId, (totals.get(pId) || 0) + toIntegerRupiah(tx.nominal));
+    }
+  }
+
+  let grandTotal = 0;
+  const result: PocketExpenseItem[] = [];
+
+  totals.forEach((val, pId) => {
+    grandTotal += val;
+    const p = pocketMap.get(pId);
+    result.push({
+      posId: pId,
+      nama: p ? p.nama : 'Belum dialokasikan',
+      warna: p ? p.warna : '#94a3b8',
+      ikon: p ? p.ikon : 'Inbox',
+      total: val,
+      persentase: 0,
+    });
+  });
+
+  if (grandTotal > 0) {
+    result.forEach((r) => {
+      r.persentase = Math.round((r.total / grandTotal) * 100);
+    });
+  }
+
+  return result.sort((a, b) => b.total - a.total);
+}
+

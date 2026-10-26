@@ -8,7 +8,7 @@
 // - Overdrawn warning calculation
 // - Debt remaining = principal - total payments (rejects overpayment)
 
-import { DebtStatus, Transaction } from './types';
+import { AutoAllocationItem, AutoAllocationRule, DebtStatus, Pocket, Transaction } from './types';
 
 /**
  * Ensures any number input is safely converted to integer Rupiah
@@ -392,3 +392,341 @@ export function calculateSavingsStreak(
 
   return { currentStreak: streak, bestStreak: Math.max(best, streak) };
 }
+
+// ===================== POCKET / ENVELOPE (POS TABUNGAN) =====================
+
+/**
+ * Calculates current balance of a specific pocket (pos) in a savings account.
+ * - System pocket "Belum dialokasikan" holds the account's initial balance and unallocated transactions.
+ * - Regular pockets derive balance strictly from transactions and internal pocket transfers.
+ */
+export function calculatePocketBalance(
+  pocket: Pocket,
+  account: { id: string; saldoAwal: number },
+  transactions: Transaction[]
+): number {
+  let balance = pocket.isSystem ? toIntegerRupiah(account.saldoAwal) : 0;
+
+  for (const tx of transactions) {
+    if (tx.isDeleted) continue;
+    const nominal = toIntegerRupiah(tx.nominal);
+
+    if (tx.jenis === 'masuk') {
+      if (tx.tabunganId === account.id) {
+        if (tx.posId === pocket.id || (pocket.isSystem && !tx.posId)) {
+          balance += nominal;
+        }
+      }
+    } else if (tx.jenis === 'keluar') {
+      if (tx.tabunganId === account.id) {
+        if (tx.posId === pocket.id || (pocket.isSystem && !tx.posId)) {
+          balance -= nominal;
+        }
+      }
+    } else if (tx.jenis === 'transfer') {
+      // Outgoing from account
+      if (tx.tabunganId === account.id) {
+        if (tx.posId === pocket.id || (pocket.isSystem && !tx.posId)) {
+          balance -= nominal;
+        }
+      }
+      // Incoming to account
+      if (tx.targetTabunganId === account.id) {
+        if (tx.targetPosId === pocket.id || (pocket.isSystem && !tx.targetPosId)) {
+          balance += nominal;
+        }
+      }
+    } else if (tx.jenis === 'pindah_pos') {
+      // Internal transfer between pockets in the same account
+      if (tx.tabunganId === account.id) {
+        if (tx.posId === pocket.id) {
+          balance -= nominal; // moved out
+        }
+        if (tx.targetPosId === pocket.id) {
+          balance += nominal; // moved in
+        }
+      }
+    } else if (tx.jenis === 'penyesuaian') {
+      if (tx.tabunganId === account.id) {
+        if (tx.posId === pocket.id || (pocket.isSystem && !tx.posId)) {
+          balance += nominal; // can be negative or positive
+        }
+      }
+    }
+  }
+
+  return toIntegerRupiah(balance);
+}
+
+/**
+ * Strict invariant verification:
+ * Saldo Tabungan === Jumlah Saldo Semua Pos + Saldo Belum Dialokasikan
+ */
+export function verifyPocketInvariant(
+  account: { id: string; saldoAwal: number },
+  pockets: Pocket[],
+  transactions: Transaction[]
+): {
+  isValid: boolean;
+  accountBalance: number;
+  totalPocketsBalance: number;
+  sumPockets: number;
+  difference: number;
+} {
+  const accountBalance = calculateAccountBalance(account.saldoAwal, transactions, account.id);
+  const accountPockets = pockets.filter((p) => p.tabunganId === account.id && !p.isDeleted);
+  
+  const totalPocketsBalance = accountPockets.reduce((sum, p) => {
+    return sum + calculatePocketBalance(p, account, transactions);
+  }, 0);
+
+  const difference = accountBalance - totalPocketsBalance;
+  return {
+    isValid: difference === 0,
+    accountBalance,
+    totalPocketsBalance,
+    sumPockets: totalPocketsBalance,
+    difference,
+  };
+}
+
+export interface AllocationCalculationResult {
+  allocations: { posId: string; nominal: number }[];
+  items: { posId: string; nominal: number }[];
+  unallocatedNominal: number;
+  sisaBelumDialokasikan: number;
+  totalAllocated: number;
+  totalDialokasikan: number;
+  isValid: boolean;
+  errorMessage?: string;
+}
+
+/**
+ * Calculates auto-allocation of an income amount based on percentage and nominal rules.
+ * - Total percentage cannot exceed 100%.
+ * - Total nominal items cannot exceed total income.
+ * - Any remainder or rounding difference automatically falls into "Belum dialokasikan".
+ */
+export function calculateAutoAllocation(
+  nominalMasuk: number,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  itemsOrRule: AutoAllocationItem[] | AutoAllocationRule | any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _unallocatedPocketIdOrPockets?: string | Pocket[] | any
+): AllocationCalculationResult {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rawItems: any[] = [];
+  if (itemsOrRule && Array.isArray(itemsOrRule.items)) {
+    rawItems = itemsOrRule.items;
+  } else if (Array.isArray(itemsOrRule)) {
+    rawItems = itemsOrRule;
+  }
+
+  // Normalize items to { posId, type, value }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = rawItems.map((it: any) => ({
+    posId: it.posId,
+    type: it.type || it.tipe || 'persen',
+    value: Number(it.value !== undefined ? it.value : it.nilai || 0),
+  }));
+
+  const cleanNominal = toIntegerRupiah(nominalMasuk);
+  if (cleanNominal <= 0) {
+    return {
+      allocations: [],
+      items: [],
+      unallocatedNominal: 0,
+      sisaBelumDialokasikan: 0,
+      totalAllocated: 0,
+      totalDialokasikan: 0,
+      isValid: true,
+    };
+  }
+
+  // 1. Validate percentages
+  const totalPercent = items
+    .filter((it) => it.type === 'persen')
+    .reduce((sum, it) => sum + it.value, 0);
+
+  if (totalPercent > 100) {
+    const msg = 'Total persentase alokasi tidak boleh melebihi 100%';
+    if (itemsOrRule && !Array.isArray(itemsOrRule)) {
+      return {
+        allocations: [],
+        items: [],
+        unallocatedNominal: cleanNominal,
+        sisaBelumDialokasikan: cleanNominal,
+        totalAllocated: 0,
+        totalDialokasikan: 0,
+        isValid: false,
+        errorMessage: msg,
+      };
+    }
+    throw new Error(msg);
+  }
+
+  // 2. Validate nominal items
+  const totalFixedNominal = items
+    .filter((it) => it.type === 'nominal')
+    .reduce((sum, it) => sum + toIntegerRupiah(it.value), 0);
+
+  if (totalFixedNominal > cleanNominal) {
+    const msg = 'Total alokasi nominal melebihi total pemasukan';
+    if (itemsOrRule && !Array.isArray(itemsOrRule)) {
+      return {
+        allocations: [],
+        items: [],
+        unallocatedNominal: cleanNominal,
+        sisaBelumDialokasikan: cleanNominal,
+        totalAllocated: 0,
+        totalDialokasikan: 0,
+        isValid: false,
+        errorMessage: msg,
+      };
+    }
+    throw new Error(msg);
+  }
+
+  // 3. Calculate allocations
+  const allocations: { posId: string; nominal: number }[] = [];
+  let allocatedSum = 0;
+
+  for (const item of items) {
+    let amt = 0;
+    if (item.type === 'nominal') {
+      amt = toIntegerRupiah(item.value);
+    } else {
+      // Percentage
+      amt = Math.floor((cleanNominal * item.value) / 100);
+    }
+
+    if (amt > 0) {
+      allocations.push({
+        posId: item.posId,
+        nominal: amt,
+      });
+      allocatedSum += amt;
+    }
+  }
+
+  if (allocatedSum > cleanNominal) {
+    const msg = 'Total alokasi kombinasi melebihi nominal masuk';
+    if (itemsOrRule && !Array.isArray(itemsOrRule)) {
+      return {
+        allocations: [],
+        items: [],
+        unallocatedNominal: cleanNominal,
+        sisaBelumDialokasikan: cleanNominal,
+        totalAllocated: 0,
+        totalDialokasikan: 0,
+        isValid: false,
+        errorMessage: msg,
+      };
+    }
+    throw new Error(msg);
+  }
+
+  const unallocatedNominal = cleanNominal - allocatedSum;
+
+  return {
+    allocations,
+    items: allocations,
+    unallocatedNominal,
+    sisaBelumDialokasikan: unallocatedNominal,
+    totalAllocated: allocatedSum,
+    totalDialokasikan: allocatedSum,
+    isValid: true,
+  };
+}
+
+/**
+ * Checks if pocket expense will overdraw current pocket balance
+ */
+export function checkPocketExpenseOverdraft(
+  pocketBalance: number,
+  expenseAmount: number
+): {
+  isOverdrawn: boolean;
+  shortfall: number;
+  defisit: number;
+} {
+  const cleanBal = toIntegerRupiah(pocketBalance);
+  const cleanExp = toIntegerRupiah(expenseAmount);
+  const shortfall = cleanExp > cleanBal ? cleanExp - cleanBal : 0;
+  return {
+    isOverdrawn: shortfall > 0,
+    shortfall,
+    defisit: shortfall,
+  };
+}
+
+/**
+ * Checks pocket monthly expense limit status
+ */
+export function checkPocketMonthlyLimit(
+  pocket: Pocket,
+  transactions: Transaction[],
+  year?: number,
+  month?: number // 1-12
+): {
+  currentExpense: number;
+  terpakai: number;
+  limit: number;
+  batas: number;
+  percentUsed: number;
+  persen: number;
+  isOverLimit: boolean;
+  isExceeded: boolean;
+  isNearLimit: boolean;
+} {
+  const limit = toIntegerRupiah(pocket.batasBulanan || 0);
+  if (limit <= 0) {
+    return {
+      currentExpense: 0,
+      terpakai: 0,
+      limit: 0,
+      batas: 0,
+      percentUsed: 0,
+      persen: 0,
+      isOverLimit: false,
+      isExceeded: false,
+      isNearLimit: false,
+    };
+  }
+
+  let currentExpense = 0;
+  if (year !== undefined && month !== undefined) {
+    const monthStr = String(month).padStart(2, '0');
+    const prefix = `${year}-${monthStr}`;
+    for (const tx of transactions) {
+      if (tx.isDeleted) continue;
+      if (tx.posId === pocket.id && tx.jenis === 'keluar' && tx.tanggal.startsWith(prefix)) {
+        currentExpense += toIntegerRupiah(tx.nominal);
+      }
+    }
+  } else {
+    for (const tx of transactions) {
+      if (tx.isDeleted) continue;
+      if (tx.posId === pocket.id && tx.jenis === 'keluar') {
+        currentExpense += toIntegerRupiah(tx.nominal);
+      }
+    }
+  }
+
+  const percentUsed = Math.round((currentExpense / limit) * 100);
+  const isOverLimit = currentExpense > limit;
+  const isNearLimit = percentUsed >= 80 && !isOverLimit;
+
+  return {
+    currentExpense,
+    terpakai: currentExpense,
+    limit,
+    batas: limit,
+    percentUsed,
+    persen: percentUsed,
+    isOverLimit,
+    isExceeded: isOverLimit,
+    isNearLimit,
+  };
+}
+

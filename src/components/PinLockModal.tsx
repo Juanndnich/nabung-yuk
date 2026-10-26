@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Delete, ShieldAlert } from 'lucide-react';
+import { Delete, ShieldAlert } from 'lucide-react';
 import { securityService } from '../services/security';
 import { soundService } from '../services/audio';
 import { repository } from '../db/repository';
@@ -108,8 +108,19 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 p-6 select-none">
       <div className="w-full max-w-xs flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4">
-          <Lock className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4 overflow-hidden border border-slate-800">
+          {settings.customAppIcon ? (
+            <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <img
+              src="/pwa-192x192.png"
+              alt="Logo"
+              className="w-12 h-12 object-contain"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          )}
         </div>
 
         <h2 className="text-xl font-bold text-white mb-1">Masukkan PIN</h2>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Wallet,
   HelpCircle,
   FileText,
   RotateCcw,
@@ -11,12 +10,14 @@ import {
 } from 'lucide-react';
 import { SoundButton } from '../../components/SoundButton';
 import { soundService } from '../../services/audio';
+import { AppSettings } from '../../domain/types';
 
 interface AboutPageProps {
+  settings?: AppSettings;
   onRestartTour: () => void;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ onRestartTour }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour }) => {
   const [openSection, setOpenSection] = useState<string | null>('panduan');
 
   const toggle = (sec: string) => {
@@ -28,6 +29,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onRestartTour }) => {
     {
       q: 'Apakah data keuangan saya dikirim ke internet?',
       a: 'Sama sekali tidak. Aplikasi Nubung Yuk 100% offline-first. Semua data disimpan secara lokal di memori browser perangkat Anda (IndexedDB). Tidak ada analitik, tracker, atau akun server.',
+    },
+    {
+      q: 'Apa perbedaan Pos Tabungan dengan Anggaran Bulanan?',
+      a: 'Pos Tabungan (amplop) adalah alokasi saldo riil di dalam dompet Anda (uang nyata yang disisihkan untuk pos tertentu, seperti Jajan, Transport, Darurat). Sedangkan Anggaran Bulanan adalah batas maksimal pengeluaran per kategori dalam 1 bulan kalender. Batas bulanan pos menyatu dengan anggaran kategori agar tidak terhitung ganda.',
     },
     {
       q: 'Bagaimana jika saya mengganti HP atau membersihkan browser?',
@@ -49,15 +54,19 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onRestartTour }) => {
       desc: 'Masuk ke menu Tabungan, klik "Tambah Dompet". Beri nama (misal: Rekening Utama, Dompet Tunai, Tabungan Haji) dan tentukan saldo awal Anda.',
     },
     {
-      title: '2. Mencatat Transaksi Cepat',
-      desc: 'Gunakan tombol bundar (+) di pojok kanan bawah layar. Pilih Catat Masuk, Catat Keluar, atau Transfer. Sertakan catatan "dipakai untuk apa" dan foto struk bila ada.',
+      title: '2. Membagi Saldo ke Pos Tabungan (Amplop)',
+      desc: 'Bagi tabungan Anda ke beberapa pos alokasi (misal: Jajan, Transportasi, Dana Darurat). Setiap tabungan memiliki pos sistem "Belum dialokasikan". Anda dapat memindahkan dana antar pos kapan saja atau memakai aturan "Bagi Otomatis" saat uang masuk.',
     },
     {
-      title: '3. Mengelola Buku Utang',
+      title: '3. Mencatat Transaksi & Bagi Otomatis',
+      desc: 'Gunakan tombol bundar (+) di pojok kanan bawah. Saat mencatat pemasukan, Anda bisa membaginya langsung ke pos secara otomatis atau manual. Pengeluaran dicatat per pos dengan peringatan jika saldo pos tidak mencukupi.',
+    },
+    {
+      title: '4. Mengelola Buku Utang',
       desc: 'Buka menu Utang untuk mencatat pinjaman yang diberikan ke teman (Piutang) atau utang pribadi. Setiap kali teman mencicil, catat pembayaran untuk memperbarui sisa utang dan melihat timeline pelunasan.',
     },
     {
-      title: '4. Menentukan Target & Anggaran',
+      title: '5. Menentukan Target & Anggaran',
       desc: 'Buat target tabungan dengan tenggat waktu impian Anda, dan pasang batas anggaran bulanan pada kategori pengeluaran agar selalu terkontrol.',
     },
   ];
@@ -66,12 +75,23 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onRestartTour }) => {
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
       {/* Hero Header */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-3xl bg-[var(--color-primary)] text-white flex items-center justify-center mb-3 shadow-md">
-          <Wallet className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-3xl bg-[var(--color-primary)] text-white flex items-center justify-center mb-3 shadow-md overflow-hidden">
+          {settings?.customAppIcon ? (
+            <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <img
+              src="/pwa-192x192.png"
+              alt="Logo"
+              className="w-12 h-12 object-contain"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          )}
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">Nubung Yuk</h1>
         <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mt-1 mb-2">
-          Versi 1.0.0 (Stabil & Mandiri)
+          Versi 1.1.0 (Pos Tabungan & PWA Terkini)
         </span>
         <p className="text-xs text-slate-500 max-w-md leading-relaxed">
           Aplikasi pencatat tabungan pribadi dan buku utang offline-first, mobile-first, tanpa akun,

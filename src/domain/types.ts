@@ -2,7 +2,7 @@
 
 export type ID = string;
 
-export type TransactionType = 'masuk' | 'keluar' | 'transfer' | 'penyesuaian';
+export type TransactionType = 'masuk' | 'keluar' | 'transfer' | 'penyesuaian' | 'pindah_pos';
 export type DebtDirection = 'piutang' | 'utang'; // 'piutang' = orang berutang ke saya, 'utang' = saya berutang ke orang
 export type DebtStatus = 'belum_dibayar' | 'dicicil' | 'lunas' | 'terlambat';
 export type RecurringFrequency = 'harian' | 'mingguan' | 'bulanan';
@@ -45,6 +45,9 @@ export interface AppSettings {
   // Motivation
   motivationEnabled: boolean;
 
+  // Custom Logo / Icon
+  customAppIcon?: string; // base64 / data URL cropped locally
+
   updatedAt: string;
 }
 
@@ -81,9 +84,45 @@ export interface Tag {
   updatedAt: string;
 }
 
+export interface Pocket {
+  id: ID;
+  tabunganId: ID;
+  nama: string;
+  ikon: string;
+  warna: string;
+  batasBulanan?: number; // Integer Rupiah (opsional)
+  target?: number; // Integer Rupiah (opsional)
+  urutan: number;
+  diarsipkan: boolean;
+  isSystem: boolean; // true untuk sistem "Belum dialokasikan"
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutoAllocationItem {
+  posId: ID;
+  type: 'persen' | 'nominal';
+  value: number; // e.g. 20 (20%) atau 50000 (Rp50.000)
+}
+
+export interface AutoAllocationRule {
+  id: ID;
+  tabunganId: ID;
+  nama: string;
+  items: AutoAllocationItem[];
+  aktif: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Transaction {
   id: ID;
   tabunganId: ID;
+  posId?: ID; // ID pos terkait
+  targetPosId?: ID; // ID pos tujuan untuk pindah pos atau transfer antar tabungan
+  posPairId?: ID; // ID transaksi pasangan jika diperlukan
   jenis: TransactionType;
   nominal: number; // Integer Rupiah (> 0)
   tanggal: string; // ISO string YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
@@ -209,7 +248,7 @@ export interface Achievement {
 
 export interface TrashItem {
   id: ID;
-  entitasTipe: 'tabungan' | 'transaksi' | 'kategori' | 'tag' | 'orang' | 'utang' | 'pembayaran' | 'target' | 'anggaran' | 'berulang';
+  entitasTipe: 'tabungan' | 'transaksi' | 'kategori' | 'tag' | 'orang' | 'utang' | 'pembayaran' | 'target' | 'anggaran' | 'berulang' | 'pos' | 'aturan_bagi';
   entitasId: ID;
   judul: string;
   dataJson: string;

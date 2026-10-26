@@ -5,40 +5,58 @@ import {
   AlertOctagon,
   Percent,
   Info,
+  Layers,
+  AlertCircle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
 } from 'recharts';
-import { AppSettings, Category, Transaction } from '../../domain/types';
+import { AppSettings, Category, Pocket, Transaction } from '../../domain/types';
 import {
   calculateAdvancedStats,
+  filterTransactionsByRange,
   generateDailyChartData,
   getPeriodDateRange,
+  aggregatePocketExpenses,
   PeriodFilter,
 } from '../../domain/statistics';
-import { formatRupiah } from '../../domain/accounting';
+import {
+  formatRupiah,
+  checkPocketMonthlyLimit,
+} from '../../domain/accounting';
 
 interface StatsPageProps {
   settings: AppSettings;
   transactions: Transaction[];
   categories: Category[];
+  pockets?: Pocket[];
 }
 
 export const StatsPage: React.FC<StatsPageProps> = ({
   settings,
   transactions,
   categories,
+  pockets = [],
 }) => {
   const [period, setPeriod] = useState<PeriodFilter>('bulan_ini');
 
   const range = getPeriodDateRange(period);
+  const periodTxs = filterTransactionsByRange(transactions, range);
   const stats = calculateAdvancedStats(transactions, categories, range);
   const chartData = generateDailyChartData(transactions, range, 0);
+
+  // Pos Tabungan statistics
+  const activePockets = pockets.filter((p) => !p.isDeleted && !p.diarsipkan);
+  const pocketExpenses = aggregatePocketExpenses(periodTxs, pockets);
+  const pocketsWithLimit = activePockets.filter((p) => p.batasBulanan && p.batasBulanan > 0);
 
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
@@ -205,6 +223,117 @@ export const StatsPage: React.FC<StatsPageProps> = ({
         )}
       </div>
 
+      {/* Pos Tabungan Statistics Section */}
+      {activePockets.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[var(--color-primary)]" />
+            <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+              Analisis Pos Tabungan (Amplop)
+            </h3>
+          </div>
+
+          {/* Pocket Expense Bar Chart */}
+          {pocketExpenses.length > 0 ? (
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+              <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-rose-500" />
+                <span>Pengeluaran per Pos pada Periode Ini</span>
+              </h4>
+
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={pocketExpenses} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="nama" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      formatter={(val: any) => formatRupiah(Number(val || 0), settings.privacyMode)}
+                    />
+                    <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                      {pocketExpenses.map((entry, index) => (
+                        <Cell key={`bar-stat-pos-${index}`} fill={entry.warna || '#f43f5e'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-4 space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                {pocketExpenses.map((pe) => (
+                  <div key={pe.posId} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pe.warna }} />
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{pe.nama}</span>
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                      {formatRupiah(pe.total, settings.privacyMode)} ({pe.persentase}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+              Belum ada pengeluaran dari pos tabungan pada periode ini.
+            </div>
+          )}
+
+          {/* Pocket Limit Status */}
+          {pocketsWithLimit.length > 0 && (
+            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <span>Status Batas Bulanan Pos</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {pocketsWithLimit.map((pos) => {
+                  const limitStatus = checkPocketMonthlyLimit(pos, periodTxs);
+                  const isOver = limitStatus.isExceeded;
+                  const isNear = limitStatus.isNearLimit;
+                  return (
+                    <div
+                      key={pos.id}
+                      className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {pos.nama}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                            isOver
+                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                              : isNear
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {limitStatus.persen}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            isOver ? 'bg-rose-500' : isNear ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${Math.min(limitStatus.persen, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                        <span>{formatRupiah(limitStatus.terpakai, settings.privacyMode)}</span>
+                        <span>dari {formatRupiah(limitStatus.batas, settings.privacyMode)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Calculation Methodology Disclosure Note */}
       <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
         <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
@@ -219,6 +348,12 @@ export const StatsPage: React.FC<StatsPageProps> = ({
           <li>
             <strong>Transfer Tabungan:</strong> Mutasi internal antar dompet dipasangkan dan tidak
             dihitung sebagai beban maupun penghasilan.
+          </li>
+          <li>
+            <strong>Pindah Dana Antar Pos:</strong> Mutasi saldo antar amplop tabungan dipasangkan dan tidak dihitung sebagai pemasukan atau pengeluaran.
+          </li>
+          <li>
+            <strong>Batas Bulanan Pos & Anggaran:</strong> Batas bulanan pos tabungan menyatu dengan anggaran kategori agar tidak terhitung ganda.
           </li>
           <li>
             <strong>Pembulatan Konsisten:</strong> Semua nilai nominal diproses sebagai bilangan bulat

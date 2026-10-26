@@ -11,11 +11,13 @@ import {
   Achievement,
   AppSettings,
   AuditLog,
+  AutoAllocationRule,
   Category,
   Debt,
   DebtPayment,
   MonthlyBudget,
   Person,
+  Pocket,
   RecurringTransaction,
   SavingsGoal,
   Tag,
@@ -23,7 +25,11 @@ import {
   TrashItem,
 } from '../domain/types';
 import { generateId } from '../utils/id';
-import { determineDebtStatus, validateDebtPayment } from '../domain/accounting';
+import {
+  calculatePocketBalance,
+  determineDebtStatus,
+  validateDebtPayment,
+} from '../domain/accounting';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   id: 'current',
@@ -118,6 +124,8 @@ export const repository = {
         db.savingsGoals,
         db.budgets,
         db.recurringTransactions,
+        db.pockets,
+        db.autoAllocationRules,
         db.auditLogs,
       ],
       async () => {
@@ -159,6 +167,12 @@ export const repository = {
             break;
           case 'berulang':
             await db.recurringTransactions.put(data);
+            break;
+          case 'pos':
+            await db.pockets.put(data);
+            break;
+          case 'aturan_bagi':
+            await db.autoAllocationRules.put(data);
             break;
         }
 
@@ -206,8 +220,22 @@ export const repository = {
       updatedAt: now,
     };
 
-    await db.transaction('rw', [db.accounts, db.auditLogs], async () => {
+    await db.transaction('rw', [db.accounts, db.pockets, db.auditLogs], async () => {
       await db.accounts.add(account);
+      const systemPocket: Pocket = {
+        id: `pos_sys_${account.id}`,
+        tabunganId: account.id,
+        nama: 'Belum dialokasikan',
+        ikon: 'Inbox',
+        warna: '#94a3b8',
+        urutan: 0,
+        diarsipkan: false,
+        isSystem: true,
+        isDeleted: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.pockets.put(systemPocket);
       await this.logAudit('create', 'tabungan', account.id, `Membuat tabungan "${account.nama}"`);
     });
 
@@ -350,7 +378,9 @@ export const repository = {
     toAccountId: string,
     nominal: number,
     tanggal: string,
-    catatan?: string
+    catatan?: string,
+    fromPosId?: string,
+    toPosId?: string
   ): Promise<Transaction> {
     const now = new Date().toISOString();
     const transferId = generateId();
@@ -359,6 +389,8 @@ export const repository = {
       id: transferId,
       tabunganId: fromAccountId,
       targetTabunganId: toAccountId,
+      posId: fromPosId || `pos_sys_${fromAccountId}`,
+      targetPosId: toPosId || `pos_sys_${toAccountId}`,
       jenis: 'transfer',
       nominal,
       tanggal,
@@ -406,6 +438,336 @@ export const repository = {
       };
       await db.trash.add(trashItem);
       await this.logAudit('delete', 'transaksi', id, `Menghapus transaksi Rp${tx.nominal}`);
+      return trashItem;
+    });
+  },
+
+  /**
+   * Move funds between pockets within the same account.
+   * Atomic, recorded as 'pindah_pos', does NOT affect overall income/expense stats.
+   */
+  async moveFundsBetweenPockets(
+    tabunganId: string,
+    sourcePosId: string,
+    targetPosId: string,
+    nominal: number,
+    tanggal: string,
+    catatan?: string
+  ): Promise<Transaction> {
+    if (sourcePosId === targetPosId) {
+      throw new Error('Pos asal dan pos tujuan tidak boleh sama.');
+    }
+    const cleanNominal = Math.round(Number(nominal));
+    if (cleanNominal <= 0) {
+      throw new Error('Nominal pemindahan dana harus lebih dari nol.');
+    }
+
+    const now = new Date().toISOString();
+    const txId = generateId();
+
+    const tx: Transaction = {
+      id: txId,
+      tabunganId,
+      posId: sourcePosId,
+      targetPosId,
+      jenis: 'pindah_pos',
+      nominal: cleanNominal,
+      tanggal,
+      catatan: catatan || 'Pindah dana antar pos',
+      isDeleted: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.transaction('rw', [db.transactions, db.auditLogs], async () => {
+      await db.transactions.add(tx);
+      await this.logAudit(
+        'create',
+        'transaksi',
+        tx.id,
+        `Pindah dana Rp${cleanNominal} antar pos`
+      );
+    });
+
+    return tx;
+  },
+
+  // ===================== POCKETS (POS TABUNGAN) =====================
+  async getPockets(tabunganId?: string): Promise<Pocket[]> {
+    if (tabunganId) {
+      return db.pockets
+        .filter((p) => p.tabunganId === tabunganId && !p.isDeleted)
+        .sortBy('urutan');
+    }
+    return db.pockets.filter((p) => !p.isDeleted).sortBy('urutan');
+  },
+
+  async getPocketById(id: string): Promise<Pocket | undefined> {
+    const p = await db.pockets.get(id);
+    return p && !p.isDeleted ? p : undefined;
+  },
+
+  /**
+   * Ensures the system pocket "Belum dialokasikan" exists for a savings account
+   */
+  async getSystemPocket(tabunganId: string): Promise<Pocket> {
+    const sysId = `pos_sys_${tabunganId}`;
+    let p = await db.pockets.get(sysId);
+    if (!p || p.isDeleted) {
+      const now = new Date().toISOString();
+      p = {
+        id: sysId,
+        tabunganId,
+        nama: 'Belum dialokasikan',
+        ikon: 'Inbox',
+        warna: '#94a3b8',
+        urutan: 0,
+        diarsipkan: false,
+        isSystem: true,
+        isDeleted: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.pockets.put(p);
+    }
+    return p;
+  },
+
+  async createPocket(
+    data: Omit<Pocket, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted' | 'isSystem'>
+  ): Promise<Pocket> {
+    const now = new Date().toISOString();
+    const existing = await this.getPockets(data.tabunganId);
+    const maxUrutan = existing.reduce((max, p) => Math.max(max, p.urutan), 0);
+
+    const pocket: Pocket = {
+      ...data,
+      id: generateId(),
+      urutan: maxUrutan + 1,
+      isSystem: false,
+      isDeleted: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.transaction('rw', [db.pockets, db.auditLogs], async () => {
+      await db.pockets.add(pocket);
+      await this.logAudit('create', 'pos', pocket.id, `Membuat pos "${pocket.nama}"`);
+    });
+
+    return pocket;
+  },
+
+  async updatePocket(id: string, updates: Partial<Pocket>): Promise<Pocket> {
+    const now = new Date().toISOString();
+    return db.transaction('rw', [db.pockets, db.auditLogs], async () => {
+      const existing = await db.pockets.get(id);
+      if (!existing) throw new Error('Pos tidak ditemukan');
+      if (existing.isSystem && updates.nama && updates.nama !== 'Belum dialokasikan') {
+        throw new Error('Pos sistem tidak dapat diubah namanya');
+      }
+
+      const updated: Pocket = { ...existing, ...updates, updatedAt: now };
+      await db.pockets.put(updated);
+      await this.logAudit('update', 'pos', id, `Mengubah pos "${updated.nama}"`);
+      return updated;
+    });
+  },
+
+  async reorderPockets(tabunganIdOrOrderedIds: string | string[], maybeOrderedIds?: string[]): Promise<void> {
+    const orderedIds = Array.isArray(tabunganIdOrOrderedIds)
+      ? tabunganIdOrOrderedIds
+      : maybeOrderedIds || [];
+    const tabunganId = typeof tabunganIdOrOrderedIds === 'string' ? tabunganIdOrOrderedIds : undefined;
+
+    const now = new Date().toISOString();
+    await db.transaction('rw', [db.pockets], async () => {
+      for (let i = 0; i < orderedIds.length; i++) {
+        const id = orderedIds[i];
+        const p = await db.pockets.get(id);
+        if (p && (!tabunganId || p.tabunganId === tabunganId)) {
+          p.urutan = i;
+          p.updatedAt = now;
+          await db.pockets.put(p);
+        }
+      }
+    });
+  },
+
+  async archivePocket(
+    id: string,
+    currentBalanceOrTargetPosId?: number | string,
+    maybeTargetPosId?: string
+  ): Promise<Pocket> {
+    const now = new Date().toISOString();
+    return db.transaction('rw', [db.pockets, db.accounts, db.transactions, db.auditLogs], async () => {
+      const pocket = await db.pockets.get(id);
+      if (!pocket) throw new Error('Pos tidak ditemukan');
+      if (pocket.isSystem) throw new Error('Pos sistem tidak dapat diarsipkan');
+
+      let currentBalance: number;
+      let targetId: string;
+
+      if (typeof currentBalanceOrTargetPosId === 'string') {
+        targetId = currentBalanceOrTargetPosId;
+        const acc = await db.accounts.get(pocket.tabunganId);
+        const allTxs = await db.transactions.where('tabunganId').equals(pocket.tabunganId).toArray();
+        currentBalance = acc ? calculatePocketBalance(pocket, acc, allTxs) : 0;
+      } else {
+        currentBalance = typeof currentBalanceOrTargetPosId === 'number' ? currentBalanceOrTargetPosId : 0;
+        targetId = maybeTargetPosId || `pos_sys_${pocket.tabunganId}`;
+      }
+
+      // If pocket has balance, transfer it to targetPos or system pocket
+      if (currentBalance > 0) {
+        const tx: Transaction = {
+          id: generateId(),
+          tabunganId: pocket.tabunganId,
+          posId: pocket.id,
+          targetPosId: targetId,
+          jenis: 'pindah_pos',
+          nominal: currentBalance,
+          tanggal: now.slice(0, 10),
+          catatan: `Pemindahan sisa saldo karena pos "${pocket.nama}" diarsipkan`,
+          isDeleted: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+        await db.transactions.add(tx);
+      }
+
+      pocket.diarsipkan = !pocket.diarsipkan;
+      pocket.updatedAt = now;
+      await db.pockets.put(pocket);
+      await this.logAudit('update', 'pos', id, `Mengarsipkan pos "${pocket.nama}"`);
+      return pocket;
+    });
+  },
+
+  async deletePocket(
+    id: string,
+    currentBalanceOrTargetPosId?: number | string,
+    maybeTargetPosId?: string
+  ): Promise<TrashItem> {
+    const now = new Date().toISOString();
+    return db.transaction('rw', [db.pockets, db.accounts, db.transactions, db.trash, db.auditLogs], async () => {
+      const pocket = await db.pockets.get(id);
+      if (!pocket) throw new Error('Pos tidak ditemukan');
+      if (pocket.isSystem) throw new Error('Pos sistem tidak dapat dihapus');
+
+      let currentBalance: number;
+      let targetPosId: string;
+
+      if (typeof currentBalanceOrTargetPosId === 'string') {
+        targetPosId = currentBalanceOrTargetPosId;
+        const acc = await db.accounts.get(pocket.tabunganId);
+        const allTxs = await db.transactions.where('tabunganId').equals(pocket.tabunganId).toArray();
+        currentBalance = acc ? calculatePocketBalance(pocket, acc, allTxs) : 0;
+      } else {
+        currentBalance = typeof currentBalanceOrTargetPosId === 'number' ? currentBalanceOrTargetPosId : 0;
+        targetPosId = maybeTargetPosId || `pos_sys_${pocket.tabunganId}`;
+      }
+
+      // Remaining balance must be moved before deletion
+      if (currentBalance > 0) {
+        const tx: Transaction = {
+          id: generateId(),
+          tabunganId: pocket.tabunganId,
+          posId: pocket.id,
+          targetPosId: targetPosId,
+          jenis: 'pindah_pos',
+          nominal: currentBalance,
+          tanggal: now.slice(0, 10),
+          catatan: `Pemindahan sisa saldo karena pos "${pocket.nama}" dihapus`,
+          isDeleted: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+        await db.transactions.add(tx);
+      }
+
+      pocket.isDeleted = true;
+      pocket.updatedAt = now;
+      await db.pockets.put(pocket);
+
+      const trashItem: TrashItem = {
+        id: generateId(),
+        entitasTipe: 'pos',
+        entitasId: id,
+        judul: `Pos Tabungan: ${pocket.nama}`,
+        dataJson: JSON.stringify(pocket),
+        tanggalDihapus: now,
+      };
+      await db.trash.add(trashItem);
+      await this.logAudit('delete', 'pos', id, `Menghapus pos "${pocket.nama}"`);
+      return trashItem;
+    });
+  },
+
+  // ===================== ATURAN BAGI OTOMATIS =====================
+  async getAutoAllocationRules(tabunganId?: string): Promise<AutoAllocationRule[]> {
+    if (tabunganId) {
+      return db.autoAllocationRules
+        .filter((r) => r.tabunganId === tabunganId && !r.isDeleted)
+        .toArray();
+    }
+    return db.autoAllocationRules.filter((r) => !r.isDeleted).toArray();
+  },
+
+  async createAutoAllocationRule(
+    data: Omit<AutoAllocationRule, 'id' | 'createdAt' | 'updatedAt' | 'isDeleted'>
+  ): Promise<AutoAllocationRule> {
+    const now = new Date().toISOString();
+    const rule: AutoAllocationRule = {
+      ...data,
+      id: generateId(),
+      isDeleted: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.transaction('rw', [db.autoAllocationRules, db.auditLogs], async () => {
+      await db.autoAllocationRules.add(rule);
+      await this.logAudit('create', 'aturan_bagi', rule.id, `Membuat aturan bagi "${rule.nama}"`);
+    });
+
+    return rule;
+  },
+
+  async updateAutoAllocationRule(
+    id: string,
+    updates: Partial<AutoAllocationRule>
+  ): Promise<AutoAllocationRule> {
+    const now = new Date().toISOString();
+    return db.transaction('rw', [db.autoAllocationRules, db.auditLogs], async () => {
+      const existing = await db.autoAllocationRules.get(id);
+      if (!existing) throw new Error('Aturan bagi tidak ditemukan');
+      const updated: AutoAllocationRule = { ...existing, ...updates, updatedAt: now };
+      await db.autoAllocationRules.put(updated);
+      await this.logAudit('update', 'aturan_bagi', id, `Mengubah aturan bagi "${updated.nama}"`);
+      return updated;
+    });
+  },
+
+  async deleteAutoAllocationRule(id: string): Promise<TrashItem> {
+    const now = new Date().toISOString();
+    return db.transaction('rw', [db.autoAllocationRules, db.trash, db.auditLogs], async () => {
+      const rule = await db.autoAllocationRules.get(id);
+      if (!rule) throw new Error('Aturan bagi tidak ditemukan');
+      rule.isDeleted = true;
+      rule.updatedAt = now;
+      await db.autoAllocationRules.put(rule);
+
+      const trashItem: TrashItem = {
+        id: generateId(),
+        entitasTipe: 'aturan_bagi',
+        entitasId: id,
+        judul: `Aturan Bagi: ${rule.nama}`,
+        dataJson: JSON.stringify(rule),
+        tanggalDihapus: now,
+      };
+      await db.trash.add(trashItem);
+      await this.logAudit('delete', 'aturan_bagi', id, `Menghapus aturan bagi "${rule.nama}"`);
       return trashItem;
     });
   },
@@ -813,6 +1175,8 @@ export const repository = {
       achievements,
       trash,
       auditLogs,
+      pockets,
+      autoAllocationRules,
     ] = await Promise.all([
       db.settings.toArray(),
       db.accounts.toArray(),
@@ -828,10 +1192,12 @@ export const repository = {
       db.achievements.toArray(),
       db.trash.toArray(),
       db.auditLogs.toArray(),
+      db.pockets.toArray(),
+      db.autoAllocationRules.toArray(),
     ]);
 
     return {
-      version: 1,
+      version: 2,
       appName: 'Nubung Yuk',
       exportedAt: new Date().toISOString(),
       data: {
@@ -849,6 +1215,8 @@ export const repository = {
         achievements,
         trash,
         auditLogs,
+        pockets,
+        autoAllocationRules,
       },
     };
   },
@@ -877,6 +1245,8 @@ export const repository = {
         db.achievements,
         db.trash,
         db.auditLogs,
+        db.pockets,
+        db.autoAllocationRules,
       ],
       async () => {
         // Clear all tables safely
@@ -895,6 +1265,8 @@ export const repository = {
           db.achievements.clear(),
           db.trash.clear(),
           db.auditLogs.clear(),
+          db.pockets.clear(),
+          db.autoAllocationRules.clear(),
         ]);
 
         if (Array.isArray(data.settings)) await db.settings.bulkPut(data.settings as AppSettings[]);
@@ -912,6 +1284,9 @@ export const repository = {
         if (Array.isArray(data.achievements)) await db.achievements.bulkPut(data.achievements as Achievement[]);
         if (Array.isArray(data.trash)) await db.trash.bulkPut(data.trash as TrashItem[]);
         if (Array.isArray(data.auditLogs)) await db.auditLogs.bulkPut(data.auditLogs as AuditLog[]);
+        if (Array.isArray(data.pockets)) await db.pockets.bulkPut(data.pockets as Pocket[]);
+        if (Array.isArray(data.autoAllocationRules))
+          await db.autoAllocationRules.bulkPut(data.autoAllocationRules as AutoAllocationRule[]);
       }
     );
   },
@@ -934,6 +1309,8 @@ export const repository = {
         db.achievements,
         db.trash,
         db.auditLogs,
+        db.pockets,
+        db.autoAllocationRules,
       ],
       async () => {
         await Promise.all([
@@ -951,6 +1328,8 @@ export const repository = {
           db.achievements.clear(),
           db.trash.clear(),
           db.auditLogs.clear(),
+          db.pockets.clear(),
+          db.autoAllocationRules.clear(),
         ]);
         await db.settings.put(DEFAULT_SETTINGS);
       }

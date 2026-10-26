@@ -80,8 +80,19 @@ export const Navigation: React.FC<NavigationProps> = ({
           </SoundButton>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold shadow-sm">
-              <Wallet className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold shadow-sm overflow-hidden">
+              {settings.customAppIcon ? (
+                <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <img
+                  src="/favicon-32x32.png"
+                  alt="Logo"
+                  className="w-5 h-5 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              )}
             </div>
             <span className="font-bold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
               Nubung Yuk
@@ -162,8 +173,19 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="relative w-72 max-w-[80vw] bg-white dark:bg-slate-900 h-full shadow-2xl p-4 flex flex-col z-10 animate-slide-right">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white">
-                  <Wallet className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white overflow-hidden shadow-sm">
+                  {settings.customAppIcon ? (
+                    <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <img
+                      src="/favicon-32x32.png"
+                      alt="Logo"
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  )}
                 </div>
                 <span className="font-bold text-base text-slate-900 dark:text-slate-100">
                   Nubung Yuk

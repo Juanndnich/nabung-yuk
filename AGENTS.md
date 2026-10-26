@@ -91,3 +91,20 @@ Minimalkan dependency. Jika memilih paket lain, jelaskan alasan singkat.
 
 ## 11. Definisi Selesai
 Lint, test, build lulus; fitur diuji lewat alur nyata; tidak ada data palsu pada penggunaan pertama; data tetap ada setelah aplikasi ditutup-dibuka; semua alur utama jalan saat offline; laporan akhir menyebut file yang diubah, hasil perintah yang benar-benar dijalankan, batasan, dan masalah tersisa.
+
+## 12. Pos Tabungan (Amplop) — Aturan Permanen
+- Setiap tabungan dapat dibagi menjadi beberapa POS (contoh: jajan, transportasi, darurat). Nama, ikon, warna, batas bulanan (opsional), dan target (opsional) dibuat pengguna. DILARANG ada pos bawaan, kecuali pos sistem "Belum dialokasikan".
+- Pos sistem "Belum dialokasikan" selalu ada per tabungan, tidak bisa dihapus/diubah namanya, dan menampung sisa saldo yang belum dibagi.
+- Invarian wajib: saldo tabungan = jumlah saldo semua pos + Belum dialokasikan. Saldo pos dihitung dari catatan transaksi, bukan angka yang diketik manual.
+- Setiap transaksi masuk/keluar WAJIB punya pos (default: Belum dialokasikan). Pengeluaran dari pos yang saldonya kurang memicu peringatan dan butuh konfirmasi atau pemindahan dana, bukan menjadi negatif diam-diam.
+- Pindah dana antar pos (dalam tabungan yang sama) = transaksi berpasangan, BUKAN pemasukan/pengeluaran, tidak masuk statistik.
+- Transfer antar tabungan harus menentukan pos asal dan pos tujuan.
+- Aturan bagi otomatis (mis. pemasukan dibagi ke beberapa pos dengan persentase atau nominal) dibuat pengguna, tanpa nilai bawaan. Total persentase tidak boleh melebihi 100%; sisanya masuk Belum dialokasikan. Hasil pembagian dicatat sebagai alokasi transparan (bisa dilihat dan diubah), bukan transaksi ganda.
+- Pos yang dihapus/diarsipkan: sisa saldonya wajib dipindahkan dulu ke pos lain atau Belum dialokasikan.
+- Anggaran bulanan dan pos TIDAK boleh menghitung dua kali: batas bulanan pos menggantikan/menyatu dengan anggaran kategori yang terkait, dan UI harus menjelaskannya.
+- Migrasi: transaksi lama otomatis masuk "Belum dialokasikan"; tidak ada data pengguna yang hilang atau berubah saldonya.
+
+## 13. Ikon Aplikasi
+- Sumber ikon dari pengguna ada di public/branding/icon-source.png (disarankan 1024x1024 PNG). Jangan menimpa file ini.
+- Semua ukuran ikon (favicon, PWA 192/512, maskable, apple-touch-icon) dihasilkan dari file sumber lewat skrip build/generator (devDependency saja), bukan ditulis manual.
+- Pengguna juga dapat mengganti ikon dari dalam aplikasi (upload + crop); ikon default tetap file sumber.

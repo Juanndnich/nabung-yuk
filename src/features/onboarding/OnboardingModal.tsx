@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
+  Layers,
 } from 'lucide-react';
 import { SoundButton } from '../../components/SoundButton';
 import { CurrencyInput } from '../../components/CurrencyInput';
@@ -87,7 +88,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
         {/* Step Indicator */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map((s) => (
+            {[1, 2, 3, 4, 5, 6].map((s) => (
               <div
                 key={s}
                 className={`h-1.5 rounded-full transition-all ${
@@ -185,8 +186,67 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
           </div>
         )}
 
-        {/* STEP 3: Theme & Palette */}
+        {/* STEP 3: Pos Tabungan (Amplop) */}
         {step === 3 && (
+          <div className="flex flex-col py-2 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">
+                  Pos Tabungan (Amplop)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Bagi saldo tabungan Anda ke beberapa pos alokasi mandiri.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Setiap tabungan otomatis memiliki pos <strong>"Belum dialokasikan"</strong> untuk menampung sisa saldo yang belum dibagi.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Buat pos kustom (misal: Jajan, Transportasi, Dana Darurat) dengan batas bulanan dan target tabungan.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Uang masuk dapat dibagi otomatis (persen atau nominal) atau pindahkan dana antar pos secara bebas tanpa mengotori statistik pengeluaran.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <SoundButton variant="secondary" onClick={() => setStep(2)} className="flex-1">
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </SoundButton>
+              <SoundButton onClick={() => setStep(4)} className="flex-1">
+                <span>Lanjut</span>
+                <ArrowRight className="w-4 h-4" />
+              </SoundButton>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Theme & Palette */}
+        {step === 4 && (
           <div className="flex flex-col py-2 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -257,11 +317,11 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
             </div>
 
             <div className="flex gap-2">
-              <SoundButton variant="secondary" onClick={() => setStep(2)} className="flex-1">
+              <SoundButton variant="secondary" onClick={() => setStep(3)} className="flex-1">
                 <ArrowLeft className="w-4 h-4" />
                 <span>Kembali</span>
               </SoundButton>
-              <SoundButton onClick={() => setStep(4)} className="flex-1">
+              <SoundButton onClick={() => setStep(5)} className="flex-1">
                 <span>Lanjut</span>
                 <ArrowRight className="w-4 h-4" />
               </SoundButton>
@@ -269,8 +329,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
           </div>
         )}
 
-        {/* STEP 4: Security (PIN) */}
-        {step === 4 && (
+        {/* STEP 5: Security (PIN) */}
+        {step === 5 && (
           <div className="flex flex-col py-2 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -321,11 +381,11 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
             </div>
 
             <div className="flex gap-2">
-              <SoundButton variant="secondary" onClick={() => setStep(3)} className="flex-1">
+              <SoundButton variant="secondary" onClick={() => setStep(4)} className="flex-1">
                 <ArrowLeft className="w-4 h-4" />
                 <span>Kembali</span>
               </SoundButton>
-              <SoundButton onClick={() => setStep(5)} className="flex-1">
+              <SoundButton onClick={() => setStep(6)} className="flex-1">
                 <span>Lanjut</span>
                 <ArrowRight className="w-4 h-4" />
               </SoundButton>
@@ -333,8 +393,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
           </div>
         )}
 
-        {/* STEP 5: Audio & Finish */}
-        {step === 5 && (
+        {/* STEP 6: Audio & Finish */}
+        {step === 6 && (
           <div className="flex flex-col py-2 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
@@ -384,7 +444,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
             </div>
 
             <div className="flex gap-2">
-              <SoundButton variant="secondary" onClick={() => setStep(4)} className="flex-1">
+              <SoundButton variant="secondary" onClick={() => setStep(5)} className="flex-1">
                 <ArrowLeft className="w-4 h-4" />
                 <span>Kembali</span>
               </SoundButton>

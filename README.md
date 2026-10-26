@@ -10,12 +10,16 @@ Aplikasi web progresif (PWA) personal yang dirancang khusus untuk pencatatan tab
    - Saat aplikasi pertama kali dibuka, database benar-benar kosong.
    - Pengguna dipandu melalui onboarding singkat untuk mendefinisikan tabungan/dompet pertama, palet warna, preferensi suara, dan PIN.
 
-2. **Buku Tabungan & Multi-Dompet**
+2. **Buku Tabungan, Multi-Dompet & Pos Tabungan (Amplop)**
    - Mendukung banyak dompet/tabungan dengan saldo independen.
-   - Pencatatan transaksi Masuk, Keluar, dan Penyesuaian Saldo (beserta alasan koreksi).
-   - Transfer antar-tabungan atomic (berpasangan keluar & masuk) yang tidak mengotori statistik pemasukan/pengeluaran.
-   - Peringatan saat pengeluaran melebihi saldo tabungan.
-   - Riwayat harian interaktif dikelompokkan per hari (Hari Ini, Kemarin, dst.) dengan subtotal masuk/keluar/selisih dan chip kategori berwarna.
+   - **Pos Tabungan (Envelope Budgeting)**: Setiap tabungan dapat dialokasikan ke pos-pos kustom (misal: Jajan, Transport, Darurat) dengan batas bulanan dan target.
+   - Pos sistem **"Belum dialokasikan"** otomatis mengawal sisa saldo tabungan yang belum dibagi.
+   - **Invarian Wajib**: Saldo tabungan selalu tepat sama dengan jumlah saldo seluruh pos + sisa belum dialokasikan.
+   - **Pindah Dana Antar Pos**: Mutasi internal saldo antar-pos dalam tabungan yang sama (bersifat net-zero, bukan pemasukan/pengeluaran).
+   - **Aturan Bagi Otomatis**: Alokasi otomatis untuk saldo masuk berdasarkan persentase atau nominal kustom dengan sisa pembulatan diarahkan ke pos belum dialokasikan (total >100% ditolak).
+   - Transfer antar-tabungan atomic dengan pilihan pos asal dan pos tujuan.
+   - Peringatan saat pengeluaran melebihi saldo tabungan atau batas bulanan pos.
+   - Riwayat harian interaktif dikelompokkan per hari (Hari Ini, Kemarin, dst.) dengan subtotal masuk/keluar/selisih dan chip pos + kategori berwarna.
 
 3. **Buku Utang & Piutang**
    - Pencatatan utang dua arah: *Orang berutang ke saya* (piutang) dan *Saya berutang ke orang* (utang).
@@ -50,16 +54,21 @@ Aplikasi web progresif (PWA) personal yang dirancang khusus untuk pencatatan tab
    - Tempat sampah terpadu untuk memulihkan (*restore*) atau menghapus permanen (*purge*).
    - Audit log mencatat riwayat perubahan penting entitas.
 
+9. **Ikon & Identitas Visual Aplikasi**
+   - **Generator Ikon Otomatis**: Menghasilkan seluruh ukuran ikon PWA (192px, 512px, maskable 512px dengan safe-zone 80%, apple-touch-icon 180px, favicon 32px & 16px, favicon.ico, serta shortcut icons) secara terprogram melalui `npm run icons` berbasis `sharp`.
+   - **Kustomisasi In-App**: Pengguna dapat mengunggah dan memotong (crop 1:1) foto/logo kustom langsung dari menu **Pengaturan > Ikon Aplikasi** menggunakan `react-easy-crop`.
+
 ---
 
 ## 🛠️ Arsitektur & Teknologi
 
 - **Frontend**: React 19 + TypeScript (Strict) + Vite 8
 - **Styling**: Tailwind CSS 4 + Lucide React (tanpa emoji di UI)
-- **Database**: Dexie.js (IndexedDB) dengan transaksi atomik multi-tabel
+- **Database**: Dexie.js (IndexedDB) dengan transaksi atomik multi-tabel & migrasi skema v2
 - **Audio & Keamanan**: Web Audio API & Web Crypto API bawaan browser
 - **Grafik**: Recharts
 - **PWA**: `vite-plugin-pwa` dengan Service Worker precaching otomatis
+- **Image Processing**: `sharp` (devDependency build script) & `react-easy-crop`
 
 ---
 
@@ -74,19 +83,28 @@ Aplikasi web progresif (PWA) personal yang dirancang khusus untuk pencatatan tab
 # Instal dependensi
 npm install
 
+# Hasilkan varian ikon PWA dari public/branding/icon-source.png
+npm run icons
+
 # Jalankan server pengembangan lokal
 npm run dev
 ```
 
+### Mengganti Ikon Default Aplikasi
+Untuk mengganti ikon master aplikasi:
+1. Ganti berkas sumber `public/branding/icon-source.png` (disarankan gambar PNG 1024x1024 px).
+2. Jalankan perintah `npm run icons` (atau otomatis saat `npm run build`). Seluruh favicon, apple-touch-icon, dan manifest ikon akan diperbarui secara otomatis.
+3. *Catatan:* Saat ini `public/branding/icon-source.png` menggunakan ikon placeholder berlabel "Nubung Yuk" dan dapat Anda gantikan kapan saja.
+
 ### Pengujian & Kualitas Kode
 ```bash
-# Jalankan unit test dan integration test
+# Jalankan unit test dan integration test (Vitest)
 npm test
 
 # Jalankan pengecekan ESLint
 npm run lint
 
-# Buat build produksi PWA
+# Buat build produksi PWA (otomatis memproses ikon)
 npm run build
 ```
 

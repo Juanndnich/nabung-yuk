@@ -10,6 +10,9 @@ import {
   BookmarkCheck,
   ChevronRight,
   Plus,
+  Layers,
+  PieChart as PieIcon,
+  Info,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,6 +31,7 @@ import {
   Category,
   Debt,
   MonthlyBudget,
+  Pocket,
   SavingsGoal,
   Transaction,
 } from '../../domain/types';
@@ -37,6 +41,8 @@ import {
   calculatePeriodTotals,
   calculateDebtSummary,
   calculateGoalProgress,
+  calculatePocketBalance,
+  checkPocketMonthlyLimit,
 } from '../../domain/accounting';
 import {
   PeriodFilter,
@@ -44,6 +50,7 @@ import {
   filterTransactionsByRange,
   generateDailyChartData,
   aggregateCategoryBreakdown,
+  aggregatePocketExpenses,
 } from '../../domain/statistics';
 import { SoundButton } from '../../components/SoundButton';
 
@@ -53,6 +60,7 @@ interface HomePageProps {
   transactions: Transaction[];
   debts: Debt[];
   categories: Category[];
+  pockets?: Pocket[];
   savingsGoals: SavingsGoal[];
   budgets: MonthlyBudget[];
   onOpenQuickAction: (action: 'income' | 'expense' | 'transfer' | 'debt') => void;
@@ -65,6 +73,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   transactions,
   debts,
   categories,
+  pockets = [],
   savingsGoals,
   budgets,
   onOpenQuickAction,
@@ -109,6 +118,33 @@ export const HomePage: React.FC<HomePageProps> = ({
   const curMonth = new Date().getMonth() + 1;
   const curYear = new Date().getFullYear();
   const currentBudgets = budgets.filter((b) => !b.isDeleted && b.bulan === curMonth && b.tahun === curYear);
+
+  // Active pockets calculations
+  const activePockets = pockets.filter((p) => !p.isDeleted && !p.diarsipkan);
+  const pocketBalanceItems = activePockets
+    .map((p) => {
+      const acc = accounts.find((a) => a.id === p.tabunganId);
+      if (!acc) return null;
+      const saldo = calculatePocketBalance(p, acc, transactions);
+      return {
+        posId: p.id,
+        nama: p.nama,
+        warna: p.warna || '#0ea5e9',
+        saldo: Math.max(0, saldo),
+        rawSaldo: saldo,
+        isSystem: p.isSystem,
+      };
+    })
+    .filter((it): it is NonNullable<typeof it> => it !== null && it.saldo > 0);
+
+  const totalPocketSaldo = pocketBalanceItems.reduce((s, it) => s + it.saldo, 0);
+  const pocketBalanceChartData = pocketBalanceItems.map((it) => ({
+    ...it,
+    persentase: totalPocketSaldo > 0 ? Math.round((it.saldo / totalPocketSaldo) * 100) : 0,
+  }));
+
+  const pocketExpenses = aggregatePocketExpenses(periodTxs, pockets);
+  const pocketsWithLimit = activePockets.filter((p) => p.batasBulanan && p.batasBulanan > 0);
 
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
@@ -384,6 +420,188 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* POS TABUNGAN OVERVIEW SECTION */}
+          {activePockets.length > 0 && (
+            <div className="space-y-6 pt-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-[var(--color-primary)]" />
+                    <span>Pos Tabungan (Amplop)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Ringkasan saldo, pengeluaran, dan batas per pos pada tabungan Anda
+                  </p>
+                </div>
+                <SoundButton
+                  size="sm"
+                  variant="outline"
+                  sound="click"
+                  onClick={() => onNavigate('/tabungan')}
+                >
+                  <span>Lihat Semua Pos</span>
+                </SoundButton>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Pocket Balance Composition Donut */}
+                {pocketBalanceChartData.length > 0 ? (
+                  <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                      <PieIcon className="w-4 h-4 text-emerald-500" />
+                      <span>Komposisi Saldo per Pos</span>
+                    </h4>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <div className="h-44 w-44 shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie>
+                            <Pie
+                              data={pocketBalanceChartData}
+                              dataKey="saldo"
+                              nameKey="nama"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={40}
+                              outerRadius={65}
+                              paddingAngle={3}
+                            >
+                              {pocketBalanceChartData.map((entry, index) => (
+                                <Cell key={`pos-cell-${index}`} fill={entry.warna || '#0ea5e9'} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              formatter={(val: any) => formatRupiah(Number(val || 0), settings.privacyMode)}
+                            />
+                          </RechartsPie>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="flex-1 w-full space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {pocketBalanceChartData.map((item) => (
+                          <div key={item.posId} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 truncate">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: item.warna }}
+                              />
+                              <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                                {item.nama}
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                                {formatRupiah(item.saldo, settings.privacyMode)}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{item.persentase}%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Pocket Expense Bar Chart */}
+                {pocketExpenses.length > 0 ? (
+                  <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-rose-500" />
+                      <span>Pengeluaran per Pos Periode Ini</span>
+                    </h4>
+
+                    <div className="h-44 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={pocketExpenses}
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <XAxis dataKey="nama" tick={{ fontSize: 10 }} />
+                          <YAxis tick={{ fontSize: 10 }} />
+                          <Tooltip
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            formatter={(val: any) => formatRupiah(Number(val || 0), settings.privacyMode)}
+                          />
+                          <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                            {pocketExpenses.map((entry, index) => (
+                              <Cell key={`bar-pos-${index}`} fill={entry.warna || '#f43f5e'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Monthly Limit Status Cards */}
+              {pocketsWithLimit.length > 0 && (
+                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span>Progres Batas Bulanan Pos Tabungan</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {pocketsWithLimit.map((pos) => {
+                      const limitStatus = checkPocketMonthlyLimit(pos, periodTxs);
+                      const isOver = limitStatus.isExceeded;
+                      const isNear = limitStatus.isNearLimit;
+                      return (
+                        <div
+                          key={pos.id}
+                          className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                              {pos.nama}
+                            </span>
+                            {isOver ? (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold">
+                                Lewat Batas
+                              </span>
+                            ) : isNear ? (
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                                Hampir Habis
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                                Aman
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isOver ? 'bg-rose-500' : isNear ? 'bg-amber-500' : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${Math.min(limitStatus.persen, 100)}%` }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>Terpakai: {formatRupiah(limitStatus.terpakai, settings.privacyMode)}</span>
+                            <span>Batas: {formatRupiah(limitStatus.batas, settings.privacyMode)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Explanatory text for Pos vs Category Budgets */}
+              <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/50 flex items-start gap-3 text-xs text-sky-800 dark:text-sky-300">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-sky-600 dark:text-sky-400" />
+                <p className="leading-relaxed">
+                  <strong>Hubungan Pos dan Anggaran:</strong> Batas bulanan pos tabungan mengontrol pengeluaran langsung per amplop tabungan. Batas pos menyatu dengan anggaran kategori agar tidak terhitung ganda dalam perencanaan keuangan.
+                </p>
               </div>
             </div>
           )}

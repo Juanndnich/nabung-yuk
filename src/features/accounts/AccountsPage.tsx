@@ -15,6 +15,7 @@ import {
   Account,
   AppSettings,
   Category,
+  Pocket,
   Tag,
   Transaction,
   TransactionType,
@@ -32,12 +33,14 @@ import { BottomSheet } from '../../components/BottomSheet';
 import { CurrencyInput } from '../../components/CurrencyInput';
 import { repository } from '../../db/repository';
 import { useToast } from '../../context/ToastContext';
+import { PocketsView } from './PocketsView';
 
 interface AccountsPageProps {
   settings: AppSettings;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
+  pockets?: Pocket[];
   tags?: Tag[];
   onRefresh: () => void;
   onOpenQuickAction: (action: 'income' | 'expense' | 'transfer' | 'debt') => void;
@@ -48,16 +51,19 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
   accounts,
   transactions,
   categories,
+  pockets = [],
   tags: _tags,
   onRefresh,
   onOpenQuickAction,
 }) => {
   const { showToast, showUndoToast } = useToast();
 
+  const [activeTab, setActiveTab] = useState<'riwayat' | 'pos'>('riwayat');
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
+  const [selectedPosId, setSelectedPosId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<TransactionType | 'all'>('all');
-  const [selectedCategory] = useState<string>('all');
+  const [selectedCategory, _setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'nominal_desc'>('date_desc');
   const [foldedDays, setFoldedDays] = useState<Record<string, boolean>>({});
 
@@ -74,12 +80,20 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
   const [adjustmentNominal, setAdjustmentNominal] = useState(0);
   const [adjustmentAlasan, setAdjustmentAlasan] = useState('');
 
+  const posMap = new Map<string, Pocket>(pockets.map((p) => [p.id, p]));
+
   // Filtered transactions
   let filtered = transactions.filter((tx) => !tx.isDeleted);
 
   if (selectedAccountId !== 'all') {
     filtered = filtered.filter(
       (tx) => tx.tabunganId === selectedAccountId || tx.targetTabunganId === selectedAccountId
+    );
+  }
+
+  if (selectedPosId !== 'all') {
+    filtered = filtered.filter(
+      (tx) => tx.posId === selectedPosId || tx.targetPosId === selectedPosId
     );
   }
 
@@ -208,7 +222,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Buku Tabungan</h1>
-          <p className="text-xs text-slate-500">Kelola dompet ganda & riwayat saldo Anda</p>
+          <p className="text-xs text-slate-500">Kelola dompet ganda, pos amplop & riwayat saldo Anda</p>
         </div>
 
         <SoundButton
@@ -225,6 +239,48 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           <span>Tambah Dompet</span>
         </SoundButton>
       </div>
+
+      {/* Tab Switcher: Riwayat vs Pos Tabungan */}
+      <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700/60 max-w-sm">
+        <button
+          onClick={() => setActiveTab('riwayat')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'riwayat'
+              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+          }`}
+        >
+          Riwayat Transaksi
+        </button>
+        <button
+          onClick={() => setActiveTab('pos')}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+            activeTab === 'pos'
+              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+          }`}
+        >
+          <span>Pos Tabungan (Amplop)</span>
+          {pockets.length > 0 && (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+              {pockets.filter((p) => !p.isDeleted && !p.isSystem).length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'pos' ? (
+        <PocketsView
+          settings={settings}
+          accounts={accounts}
+          selectedAccountId={selectedAccountId === 'all' ? accounts[0]?.id || '' : selectedAccountId}
+          onSelectAccount={(id) => setSelectedAccountId(id)}
+          pockets={pockets}
+          transactions={transactions}
+          onRefresh={onRefresh}
+        />
+      ) : (
+        <>
 
       {/* Account Horizontal Cards */}
       <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
@@ -405,6 +461,24 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           >
             Penyesuaian
           </button>
+
+          {/* Pos Filter Selector */}
+          {pockets.length > 0 && (
+            <select
+              value={selectedPosId}
+              onChange={(e) => setSelectedPosId(e.target.value)}
+              className="px-3 py-1 rounded-full text-xs font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none outline-none cursor-pointer"
+            >
+              <option value="all">Semua Pos (Amplop)</option>
+              {pockets
+                .filter((p) => selectedAccountId === 'all' || p.tabunganId === selectedAccountId)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    Pos: {p.nama}
+                  </option>
+                ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -486,13 +560,14 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                               {tx.jenis === 'masuk' && <ArrowDownLeft className="w-5 h-5" />}
                               {tx.jenis === 'keluar' && <ArrowUpRight className="w-5 h-5" />}
                               {tx.jenis === 'transfer' && <ArrowLeftRight className="w-5 h-5" />}
+                              {tx.jenis === 'pindah_pos' && <ArrowLeftRight className="w-5 h-5 text-indigo-500" />}
                               {tx.jenis === 'penyesuaian' && <Wallet className="w-5 h-5" />}
                             </div>
 
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-                                  {tx.catatan || (cat ? cat.nama : 'Tanpa Keterangan')}
+                                  {tx.catatan || (cat ? cat.nama : tx.jenis === 'pindah_pos' ? 'Pindah Dana Pos' : 'Tanpa Keterangan')}
                                 </span>
                                 {cat && (
                                   <span
@@ -500,6 +575,20 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                                     style={{ backgroundColor: cat.warna }}
                                   >
                                     {cat.nama}
+                                  </span>
+                                )}
+                                {tx.posId && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full"
+                                      style={{ backgroundColor: posMap.get(tx.posId)?.warna || '#64748b' }}
+                                    />
+                                    <span>{posMap.get(tx.posId)?.nama || 'Belum dialokasikan'}</span>
+                                    {tx.jenis === 'pindah_pos' && tx.targetPosId && (
+                                      <span className="text-indigo-500 font-bold ml-0.5">
+                                        → {posMap.get(tx.targetPosId)?.nama || 'Pos'}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </div>
@@ -548,6 +637,8 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           </p>
         </div>
       )}
+      </>
+      )}
 
       {/* Transaction Detail BottomSheet */}
       {activeTx && (
@@ -585,6 +676,18 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                   </span>
                 </div>
               )}
+
+              <div className="flex justify-between">
+                <span className="text-slate-500">Pos Tabungan</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {posMap.get(activeTx.posId || '')?.nama || 'Belum dialokasikan'}
+                  {activeTx.jenis === 'pindah_pos' && activeTx.targetPosId && (
+                    <span className="text-indigo-500 font-bold ml-1">
+                      → {posMap.get(activeTx.targetPosId)?.nama || 'Pos'}
+                    </span>
+                  )}
+                </span>
+              </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-500">Kategori</span>
