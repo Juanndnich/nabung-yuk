@@ -221,8 +221,11 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
       {/* Header & Wallet Cards */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Buku Tabungan</h1>
-          <p className="text-xs text-slate-500">Kelola dompet ganda, pos amplop & riwayat saldo Anda</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-accounts)] inline-block" />
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Buku Tabungan</h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Kelola dompet ganda, pos amplop & riwayat saldo Anda</p>
         </div>
 
         <SoundButton
@@ -241,13 +244,13 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
       </div>
 
       {/* Tab Switcher: Riwayat vs Pos Tabungan */}
-      <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700/60 max-w-sm">
+      <div className="flex rounded-2xl bg-[var(--bg-subtle)] p-1 border border-[var(--border-color)] max-w-sm">
         <button
           onClick={() => setActiveTab('riwayat')}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'riwayat'
-              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'bg-[var(--bg-card)] text-[var(--accent-accounts)] shadow-soft-sm'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Riwayat Transaksi
@@ -256,13 +259,13 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           onClick={() => setActiveTab('pos')}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeTab === 'pos'
-              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'bg-[var(--bg-card)] text-[var(--accent-accounts)] shadow-soft-sm'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           <span>Pos Tabungan (Amplop)</span>
           {pockets.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--accent-accounts)]/15 text-[var(--accent-accounts)] font-bold">
               {pockets.filter((p) => !p.isDeleted && !p.isSystem).length}
             </span>
           )}
@@ -287,14 +290,14 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
         {/* 'All' Tab Button */}
         <button
           onClick={() => setSelectedAccountId('all')}
-          className={`flex flex-col p-4 rounded-2xl border min-w-[150px] text-left transition-all cursor-pointer ${
+          className={`flex flex-col p-4 rounded-3xl border min-w-[150px] text-left transition-all cursor-pointer ${
             selectedAccountId === 'all'
-              ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+              ? 'border-[var(--accent-accounts)] bg-[var(--accent-accounts)]/10 ring-2 ring-[var(--accent-accounts)] shadow-soft-sm'
+              : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--accent-accounts)]'
           }`}
         >
-          <span className="text-xs font-semibold text-slate-500">Semua Tabungan</span>
-          <span className="text-base font-bold text-slate-900 dark:text-slate-100 mt-1">
+          <span className="text-xs font-semibold text-[var(--text-secondary)]">Semua Tabungan</span>
+          <span className="text-base font-bold text-[var(--text-primary)] mt-1 tabular-nums">
             {formatRupiah(
               accounts.reduce(
                 (sum, a) => sum + calculateAccountBalance(a.saldoAwal, transactions, a.id),
@@ -303,7 +306,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
               settings.privacyMode
             )}
           </span>
-          <span className="text-[11px] text-slate-400 mt-1">{accounts.length} dompet aktif</span>
+          <span className="text-[11px] text-[var(--text-muted)] mt-1">{accounts.length} dompet aktif</span>
         </button>
 
         {accounts.map((acc) => {
@@ -314,10 +317,10 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
             <div
               key={acc.id}
               onClick={() => setSelectedAccountId(acc.id)}
-              className={`flex flex-col p-4 rounded-2xl border min-w-[170px] relative transition-all cursor-pointer ${
+              className={`flex flex-col p-4 rounded-3xl border min-w-[170px] relative transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 ring-2 ring-[var(--color-primary)]'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'
+                  ? 'border-[var(--accent-accounts)] bg-[var(--accent-accounts)]/10 ring-2 ring-[var(--accent-accounts)] shadow-soft-sm'
+                  : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[var(--accent-accounts)]'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
@@ -326,7 +329,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                     className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: acc.warna }}
                   />
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
+                  <span className="text-xs font-semibold text-[var(--text-primary)] truncate max-w-[100px]">
                     {acc.nama}
                   </span>
                 </div>
@@ -340,18 +343,18 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                     setAccountFormColor(acc.warna);
                     setAccountModalOpen(true);
                   }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <span className="text-base font-bold text-slate-900 dark:text-slate-100 mt-1">
+              <span className="text-base font-bold text-[var(--text-primary)] mt-1 tabular-nums">
                 {formatRupiah(bal, settings.privacyMode)}
               </span>
 
-              <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400">
-                <span>Awal: {formatRupiah(acc.saldoAwal, settings.privacyMode)}</span>
+              <div className="flex items-center justify-between mt-2 pt-1 border-t border-[var(--border-color)] text-[10px] text-[var(--text-muted)]">
+                <span className="tabular-nums">Awal: {formatRupiah(acc.saldoAwal, settings.privacyMode)}</span>
               </div>
             </div>
           );
@@ -359,8 +362,8 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
       </div>
 
       {/* Action shortcuts under accounts */}
-      <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-800/60 p-3 rounded-2xl gap-2">
-        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+      <div className="flex items-center justify-between bg-[var(--bg-subtle)] p-3 rounded-2xl border border-[var(--border-color)] gap-2">
+        <span className="text-xs font-semibold text-[var(--text-secondary)]">
           Aksi Tabungan Terpilih:
         </span>
         <div className="flex gap-2">
@@ -384,102 +387,57 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari transaksi atau nominal..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            />
-          </div>
+      {/* Search & Filters in Compact Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+        <div className="relative sm:col-span-1">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="Cari transaksi..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] focus:outline-hidden focus:border-pink-400"
+          />
+        </div>
 
+        <select
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value as TransactionType | 'all')}
+          className="px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] cursor-pointer focus:outline-hidden focus:border-pink-400"
+        >
+          <option value="all">Semua Jenis Transaksi</option>
+          <option value="masuk">Pemasukan (Masuk)</option>
+          <option value="keluar">Pengeluaran (Keluar)</option>
+          <option value="transfer">Transfer Antar Dompet</option>
+          <option value="penyesuaian">Penyesuaian Saldo</option>
+        </select>
+
+        {pockets.length > 0 ? (
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'date_desc' | 'date_asc' | 'nominal_desc')}
-            className="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium"
+            value={selectedPosId}
+            onChange={(e) => setSelectedPosId(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] cursor-pointer focus:outline-hidden focus:border-pink-400"
           >
-            <option value="date_desc">Terbaru</option>
-            <option value="date_asc">Terlama</option>
-            <option value="nominal_desc">Nominal Terbesar</option>
+            <option value="all">Semua Pos (Amplop)</option>
+            {pockets.filter((p) => !p.isDeleted).map((pos) => (
+              <option key={pos.id} value={pos.id}>
+                Pos: {pos.nama}
+              </option>
+            ))}
           </select>
-        </div>
+        ) : (
+          <div className="hidden sm:block" />
+        )}
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            onClick={() => setSelectedType('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              selectedType === 'all'
-                ? 'bg-[var(--color-primary)] text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Semua Jenis
-          </button>
-          <button
-            onClick={() => setSelectedType('masuk')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              selectedType === 'masuk'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Masuk
-          </button>
-          <button
-            onClick={() => setSelectedType('keluar')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              selectedType === 'keluar'
-                ? 'bg-rose-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Keluar
-          </button>
-          <button
-            onClick={() => setSelectedType('transfer')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              selectedType === 'transfer'
-                ? 'bg-sky-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Transfer
-          </button>
-          <button
-            onClick={() => setSelectedType('penyesuaian')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              selectedType === 'penyesuaian'
-                ? 'bg-purple-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Penyesuaian
-          </button>
-
-          {/* Pos Filter Selector */}
-          {pockets.length > 0 && (
-            <select
-              value={selectedPosId}
-              onChange={(e) => setSelectedPosId(e.target.value)}
-              className="px-3 py-1 rounded-full text-xs font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none outline-none cursor-pointer"
-            >
-              <option value="all">Semua Pos (Amplop)</option>
-              {pockets
-                .filter((p) => selectedAccountId === 'all' || p.tabunganId === selectedAccountId)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    Pos: {p.nama}
-                  </option>
-                ))}
-            </select>
-          )}
-        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as 'date_desc' | 'date_asc' | 'nominal_desc')}
+          className="px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] cursor-pointer focus:outline-hidden focus:border-pink-400"
+        >
+          <option value="date_desc">Urutkan: Tanggal Terbaru</option>
+          <option value="date_asc">Urutkan: Tanggal Terlama</option>
+          <option value="nominal_desc">Urutkan: Nominal Terbesar</option>
+        </select>
       </div>
 
       {/* Transactions List Grouped by Day */}
@@ -491,46 +449,46 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
             return (
               <div
                 key={group.date}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs"
+                className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl overflow-hidden shadow-soft-sm"
               >
-                {/* Daily Subtotal Header (Clickable to fold/unfold) */}
+                {/* Daily Subtotal Sticky Header (Clickable to fold/unfold) */}
                 <div
                   onClick={() => toggleFold(group.date)}
-                  className="flex items-center justify-between p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
+                  className="sticky top-0 z-10 flex items-center justify-between p-4 bg-[var(--bg-card)]/95 backdrop-blur-md border-b border-[var(--border-color)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                    <span className="font-bold text-sm text-[var(--text-primary)]">
                       {group.label}
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-[var(--text-muted)] tabular-nums">
                       ({group.transactions.length})
                     </span>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <div className="text-right text-xs">
-                      <span className="text-emerald-600 font-semibold mr-2">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold mr-2 tabular-nums">
                         +{formatRupiah(group.totalMasuk, settings.privacyMode)}
                       </span>
-                      <span className="text-rose-600 font-semibold mr-2">
+                      <span className="text-rose-600 dark:text-rose-400 font-semibold mr-2 tabular-nums">
                         -{formatRupiah(group.totalKeluar, settings.privacyMode)}
                       </span>
-                      <span className="text-slate-500 font-bold">
+                      <span className="text-[var(--text-secondary)] font-bold tabular-nums">
                         Selisih: {formatRupiah(group.selisih, settings.privacyMode)}
                       </span>
                     </div>
 
                     {isFolded ? (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                      <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
                     ) : (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
+                      <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
                     )}
                   </div>
                 </div>
 
                 {/* List of transactions for this day */}
                 {!isFolded && (
-                  <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <div className="divide-y divide-[var(--border-color)]">
                     {group.transactions.map((tx) => {
                       const cat = tx.kategoriId ? catMap.get(tx.kategoriId) : null;
                       const acc = accMap.get(tx.tabunganId);
@@ -543,18 +501,18 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                         <div
                           key={tx.id}
                           onClick={() => setActiveTx(tx)}
-                          className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors"
+                          className="flex items-center justify-between p-4 hover:bg-[var(--bg-subtle)] cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <div
                               className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
                                 tx.jenis === 'masuk'
-                                  ? 'bg-emerald-500/10 text-emerald-600'
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                                   : tx.jenis === 'keluar'
-                                  ? 'bg-rose-500/10 text-rose-600'
+                                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                                   : tx.jenis === 'transfer'
-                                  ? 'bg-sky-500/10 text-sky-600'
-                                  : 'bg-purple-500/10 text-purple-600'
+                                  ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                                  : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
                               }`}
                             >
                               {tx.jenis === 'masuk' && <ArrowDownLeft className="w-5 h-5" />}
@@ -566,7 +524,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
 
                             <div>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                                <span className="font-semibold text-sm text-[var(--text-primary)]">
                                   {tx.catatan || (cat ? cat.nama : tx.jenis === 'pindah_pos' ? 'Pindah Dana Pos' : 'Tanpa Keterangan')}
                                 </span>
                                 {cat && (
@@ -578,7 +536,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                                   </span>
                                 )}
                                 {tx.posId && (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-color)]">
                                     <span
                                       className="w-1.5 h-1.5 rounded-full"
                                       style={{ backgroundColor: posMap.get(tx.posId)?.warna || '#64748b' }}
@@ -586,13 +544,13 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                                     <span>{posMap.get(tx.posId)?.nama || 'Belum dialokasikan'}</span>
                                     {tx.jenis === 'pindah_pos' && tx.targetPosId && (
                                       <span className="text-indigo-500 font-bold ml-0.5">
-                                        → {posMap.get(tx.targetPosId)?.nama || 'Pos'}
+                                        &rarr; {posMap.get(tx.targetPosId)?.nama || 'Pos'}
                                       </span>
                                     )}
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[11px] text-slate-400 block mt-0.5">
+                              <span className="text-[11px] text-[var(--text-muted)] block mt-0.5">
                                 {acc?.nama} • {tx.tanggal.slice(11, 16) || 'Hari ini'}
                               </span>
                             </div>
@@ -600,7 +558,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
 
                           <div className="text-right">
                             <span
-                              className={`text-sm font-bold block ${
+                              className={`text-sm font-bold block tabular-nums ${
                                 isExpense
                                   ? 'text-rose-600 dark:text-rose-400'
                                   : isIncome
@@ -612,7 +570,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
                               {formatRupiah(tx.nominal, settings.privacyMode)}
                             </span>
                             {tx.lampiranFoto && (
-                              <span className="text-[10px] text-slate-400">Ada foto</span>
+                              <span className="text-[10px] text-[var(--text-muted)]">Ada foto</span>
                             )}
                           </div>
                         </div>
@@ -625,14 +583,14 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           })}
         </div>
       ) : (
-        <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
+        <div className="p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center shadow-soft-sm">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--bg-subtle)] text-[var(--text-muted)] flex items-center justify-center mb-3">
             <Wallet className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+          <h3 className="font-bold text-sm text-[var(--text-primary)] mb-1">
             Belum Ada Transaksi Ditemukan
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mb-4">
+          <p className="text-xs text-[var(--text-muted)] max-w-sm mb-4">
             Catat pengeluaran atau pemasukan pertama Anda di tabungan ini.
           </p>
         </div>
@@ -649,73 +607,73 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
         >
           <div className="space-y-4">
             <div className="text-center py-2">
-              <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
+              <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">
                 Nominal Transaksi
               </span>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+              <h2 className="text-3xl font-extrabold text-[var(--text-primary)] mt-1 tabular-nums">
                 {formatRupiah(activeTx.nominal, settings.privacyMode)}
               </h2>
-              <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold capitalize bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold capitalize bg-[var(--bg-subtle)] text-[var(--text-secondary)]">
                 {activeTx.jenis}
               </span>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl space-y-2.5 text-xs">
+            <div className="bg-[var(--bg-subtle)] p-4 rounded-2xl space-y-2.5 text-xs border border-[var(--border-color)]">
               <div className="flex justify-between">
-                <span className="text-slate-500">Tabungan</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="text-[var(--text-secondary)]">Tabungan</span>
+                <span className="font-semibold text-[var(--text-primary)]">
                   {accMap.get(activeTx.tabunganId)?.nama || '-'}
                 </span>
               </div>
 
               {activeTx.targetTabunganId && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Tabungan Tujuan</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="text-[var(--text-secondary)]">Tabungan Tujuan</span>
+                  <span className="font-semibold text-[var(--text-primary)]">
                     {accMap.get(activeTx.targetTabunganId)?.nama || '-'}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between">
-                <span className="text-slate-500">Pos Tabungan</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="text-[var(--text-secondary)]">Pos Tabungan</span>
+                <span className="font-semibold text-[var(--text-primary)]">
                   {posMap.get(activeTx.posId || '')?.nama || 'Belum dialokasikan'}
                   {activeTx.jenis === 'pindah_pos' && activeTx.targetPosId && (
                     <span className="text-indigo-500 font-bold ml-1">
-                      → {posMap.get(activeTx.targetPosId)?.nama || 'Pos'}
+                      &rarr; {posMap.get(activeTx.targetPosId)?.nama || 'Pos'}
                     </span>
                   )}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-slate-500">Kategori</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="text-[var(--text-secondary)]">Kategori</span>
+                <span className="font-semibold text-[var(--text-primary)]">
                   {activeTx.kategoriId ? catMap.get(activeTx.kategoriId)?.nama : 'Umum'}
                 </span>
               </div>
 
               <div className="flex justify-between">
-                <span className="text-slate-500">Tanggal & Waktu</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                <span className="text-[var(--text-secondary)]">Tanggal & Waktu</span>
+                <span className="font-semibold text-[var(--text-primary)] tabular-nums">
                   {activeTx.tanggal.slice(0, 10)} {activeTx.tanggal.slice(11, 16)}
                 </span>
               </div>
 
               {activeTx.catatan && (
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-500 block mb-1">Catatan "Dipakai Untuk Apa":</span>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                <div className="pt-2 border-t border-[var(--border-color)]">
+                  <span className="text-[var(--text-secondary)] block mb-1">Catatan "Dipakai Untuk Apa":</span>
+                  <p className="font-medium text-[var(--text-primary)]">
                     {activeTx.catatan}
                   </p>
                 </div>
               )}
 
               {activeTx.alasanPenyesuaian && (
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-500 block mb-1">Alasan Penyesuaian Saldo:</span>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                <div className="pt-2 border-t border-[var(--border-color)]">
+                  <span className="text-[var(--text-secondary)] block mb-1">Alasan Penyesuaian Saldo:</span>
+                  <p className="font-medium text-[var(--text-primary)]">
                     {activeTx.alasanPenyesuaian}
                   </p>
                 </div>
@@ -725,13 +683,13 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
             {/* Photo Attachment Preview */}
             {activeTx.lampiranFoto && (
               <div>
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                <span className="text-xs font-semibold text-[var(--text-primary)] block mb-1.5">
                   Foto Struk / Bukti:
                 </span>
                 <img
                   src={activeTx.lampiranFoto}
                   alt="Bukti Struk"
-                  className="w-full max-h-60 object-contain rounded-2xl border border-slate-200 dark:border-slate-700 bg-black/5"
+                  className="w-full max-h-60 object-contain rounded-2xl border border-[var(--border-color)] bg-black/5"
                 />
               </div>
             )}

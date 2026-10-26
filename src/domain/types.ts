@@ -9,7 +9,7 @@ export type RecurringFrequency = 'harian' | 'mingguan' | 'bulanan';
 export type ReminderType = 'utang' | 'berulang' | 'target' | 'backup';
 export type SoundStyle = 'modern' | 'lembut' | 'tegas' | 'retro';
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type ColorPreset = 'teal' | 'ocean' | 'purple' | 'amber' | 'rose' | 'neutral';
+export type ColorPreset = 'blue_pink' | 'ocean' | 'teal' | 'purple' | 'amber' | 'rose' | 'neutral';
 
 export interface AppSettings {
   id: string; // 'current'

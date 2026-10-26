@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal';
 import { CurrencyInput } from '../../components/CurrencyInput';
 import { repository } from '../../db/repository';
 import { useToast } from '../../context/ToastContext';
+import { triggerCelebration } from '../../utils/confetti';
 
 interface GoalsPageProps {
   settings: AppSettings;
@@ -74,11 +75,20 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
   };
 
   const handleToggleComplete = async (g: SavingsGoal) => {
-    await repository.updateSavingsGoal(g.id, { tercapai: !g.tercapai });
-    showToast({
-      type: 'success',
-      message: g.tercapai ? 'Target dikembalikan aktif' : 'Selamat! Target berhasil tercapai',
-    });
+    const isNowComplete = !g.tercapai;
+    await repository.updateSavingsGoal(g.id, { tercapai: isNowComplete });
+    if (isNowComplete) {
+      triggerCelebration();
+      showToast({
+        type: 'success',
+        message: 'Selamat! Target impian Anda berhasil tercapai!',
+      });
+    } else {
+      showToast({
+        type: 'success',
+        message: 'Target dikembalikan aktif',
+      });
+    }
     onRefresh();
   };
 
@@ -86,8 +96,11 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Target Tabungan</h1>
-          <p className="text-xs text-slate-500">Wujudkan impian finansial dengan progres terukur</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-goals)] inline-block" />
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Target Tabungan</h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Wujudkan impian finansial dengan progres terukur</p>
         </div>
 
         <SoundButton size="sm" sound="click" onClick={() => setModalOpen(true)}>
@@ -110,22 +123,22 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
             return (
               <div
                 key={g.id}
-                className={`p-5 rounded-3xl bg-white dark:bg-slate-900 border transition-all ${
+                className={`p-5 rounded-3xl border transition-all ${
                   g.tercapai
-                    ? 'border-emerald-500/50 bg-emerald-500/5'
-                    : 'border-slate-200 dark:border-slate-800 shadow-xs'
+                    ? 'border-emerald-500/50 bg-emerald-500/5 shadow-soft-sm'
+                    : 'bg-[var(--bg-card)] border-[var(--border-color)] shadow-soft-sm hover:border-[var(--accent-goals)]'
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                       <Target className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      <h3 className="font-bold text-sm text-[var(--text-primary)]">
                         {g.nama}
                       </h3>
-                      <span className="text-xs text-slate-500 block">
+                      <span className="text-xs text-[var(--text-muted)] block">
                         {acc ? `Dari tabungan: ${acc.nama}` : 'Dari seluruh tabungan'}
                       </span>
                     </div>
@@ -137,15 +150,15 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
                       title={g.tercapai ? 'Batal Selesai' : 'Tandai Selesai'}
                       className={`p-2 rounded-xl transition-all cursor-pointer ${
                         g.tercapai
-                          ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60'
-                          : 'text-slate-400 hover:text-emerald-600'
+                          ? 'text-emerald-600 bg-emerald-500/15'
+                          : 'text-[var(--text-muted)] hover:text-emerald-600'
                       }`}
                     >
                       <CheckCircle className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteGoal(g)}
-                      className="p-2 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                      className="p-2 text-[var(--text-muted)] hover:text-rose-600 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -154,38 +167,38 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Terkumpul:</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                    <span className="text-[var(--text-muted)]">Terkumpul:</span>
+                    <span className="font-bold text-[var(--text-primary)] tabular-nums">
                       {formatRupiah(currentSavings, settings.privacyMode)} dari{' '}
                       {formatRupiah(g.nominalTarget, settings.privacyMode)}
                     </span>
                   </div>
 
-                  <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="w-full h-2.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+                      className="h-full rounded-full bg-linear-to-r from-purple-500 to-pink-500 transition-all"
                       style={{ width: `${persen}%` }}
                     />
                   </div>
 
-                  <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>Sisa: {formatRupiah(sisaNominal, settings.privacyMode)}</span>
-                    <span className="font-semibold text-[var(--color-primary)]">{persen}%</span>
+                  <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
+                    <span className="tabular-nums">Sisa: {formatRupiah(sisaNominal, settings.privacyMode)}</span>
+                    <span className="font-semibold text-[var(--color-primary)] tabular-nums">{persen}%</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-                  <span className="text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--border-color)] text-xs">
+                  <span className="text-[var(--text-muted)] flex items-center gap-1 tabular-nums">
+                    <Calendar className="w-3.5 h-3.5" />
                     <span>{g.tenggat ? `Tenggat: ${g.tenggat.slice(0, 10)}` : 'Tanpa tenggat'}</span>
                   </span>
 
                   {estimasiHariTercapai !== null && (
                     <span
-                      className={`font-semibold ${
+                      className={`font-semibold tabular-nums ${
                         statusTenggat === 'terancam' || statusTenggat === 'lewat_tenggat'
                           ? 'text-amber-500'
-                          : 'text-emerald-600'
+                          : 'text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
                       {statusTenggat === 'lewat_tenggat'
@@ -199,12 +212,12 @@ export const GoalsPage: React.FC<GoalsPageProps> = ({
           })}
         </div>
       ) : (
-        <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center">
-          <Target className="w-8 h-8 text-slate-400 mb-2" />
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+        <div className="p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center shadow-soft-sm">
+          <Target className="w-8 h-8 text-[var(--text-muted)] mb-2" />
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
             Belum ada target tabungan
           </p>
-          <p className="text-xs text-slate-500 mt-1 mb-4">
+          <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">
             Tentukan tujuan menabung Anda (mis. Dana Darurat, Liburan, Beli Laptop).
           </p>
           <SoundButton size="sm" onClick={() => setModalOpen(true)}>

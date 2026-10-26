@@ -40,7 +40,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
         value={displayValue}
         onChange={handleChange}
         placeholder={placeholder}
-        className={`w-full px-4 py-3 text-lg font-semibold rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all ${className}`}
+        className={`w-full px-4 py-3 text-lg font-bold rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-hidden focus:border-pink-400 tabular-nums transition-all ${className}`}
       />
     </div>
   );

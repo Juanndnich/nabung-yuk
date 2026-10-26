@@ -4,7 +4,6 @@ import {
   Palette,
   Shield,
   Volume2,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   Check,
@@ -30,7 +29,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
   const [namaTabungan, setNamaTabungan] = useState('');
   const [saldoAwal, setSaldoAwal] = useState(0);
   const [selectedTheme, setSelectedTheme] = useState<ThemeMode>('system');
-  const [selectedPreset, setSelectedPreset] = useState<ColorPreset>('teal');
+  const [selectedPreset, setSelectedPreset] = useState<ColorPreset>('blue_pink');
 
   // PIN
   const [setupPin, setSetupPin] = useState(false);
@@ -113,8 +112,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onFini
         {/* STEP 1: Welcome */}
         {step === 1 && (
           <div className="flex flex-col items-center text-center py-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-3xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8" />
+            <div className="w-18 h-18 rounded-3xl bg-linear-to-br from-blue-600 to-pink-500 p-0.5 shadow-xl shadow-blue-500/25 mb-4 overflow-hidden">
+              <img src="/pwa-192x192.png" alt="Nubung Yuk" className="w-full h-full object-cover rounded-[22px]" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               Selamat Datang di Nubung Yuk

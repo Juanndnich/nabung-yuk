@@ -33,12 +33,12 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           onClose();
         }}
       />
-      <div className="relative w-full max-w-lg mx-auto bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] z-10 animate-slide-up">
+      <div className="relative w-full max-w-lg mx-auto bg-[var(--bg-surface)] border-t border-[var(--border-color)] rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] z-10 animate-slide-up">
         {/* Drag pill handle */}
-        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mt-3 mb-1" />
+        <div className="w-12 h-1.5 bg-[var(--border-color)] rounded-full mx-auto mt-3 mb-1" />
 
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border-color)]">
+          <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
           <SoundButton
             variant="ghost"
             size="icon"

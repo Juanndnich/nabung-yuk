@@ -31,6 +31,7 @@ import { CurrencyInput } from '../../components/CurrencyInput';
 import { repository } from '../../db/repository';
 import { useToast } from '../../context/ToastContext';
 import { dataTransferService } from '../../services/dataTransfer';
+import { triggerCelebration } from '../../utils/confetti';
 
 interface DebtsPageProps {
   settings: AppSettings;
@@ -108,6 +109,10 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
     if (!selectedDebt) return;
 
     try {
+      const payments = debtPayments.filter((p) => !p.isDeleted && p.utangId === selectedDebt.id);
+      const { sisa } = calculateDebtSummary(selectedDebt.pokok, payments);
+      const willBePaidOff = paymentNominal >= sisa;
+
       await repository.recordDebtPayment(
         selectedDebt.id,
         paymentNominal,
@@ -117,10 +122,18 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
         linkWalletPayment ? paymentTabunganId : undefined
       );
 
-      showToast({
-        type: 'success',
-        message: `Pembayaran ${formatRupiah(paymentNominal)} berhasil dicatat`,
-      });
+      if (willBePaidOff) {
+        triggerCelebration();
+        showToast({
+          type: 'success',
+          message: `Selamat! Utang telah LUNAS!`,
+        });
+      } else {
+        showToast({
+          type: 'success',
+          message: `Pembayaran ${formatRupiah(paymentNominal)} berhasil dicatat`,
+        });
+      }
 
       setPaymentModalOpen(false);
       setPaymentNominal(0);
@@ -206,8 +219,11 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Buku Utang</h1>
-          <p className="text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-debts)] inline-block" />
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Buku Utang</h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">
             Catatan piutang (orang berutang) & utang pribadi offline
           </p>
         </div>
@@ -235,13 +251,13 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
       </div>
 
       {/* Mode Tabs: Per Catatan vs Per Orang */}
-      <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+      <div className="flex p-1 bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-2xl max-w-sm">
         <button
           onClick={() => setActiveTab('per_catatan')}
           className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
             activeTab === 'per_catatan'
-              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-[var(--bg-card)] text-[var(--accent-debts)] shadow-soft-sm'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           Per Catatan Utang
@@ -250,60 +266,36 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
           onClick={() => setActiveTab('per_orang')}
           className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
             activeTab === 'per_orang'
-              ? 'bg-white dark:bg-slate-900 text-[var(--color-primary)] shadow-xs'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-[var(--bg-card)] text-[var(--accent-debts)] shadow-soft-sm'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
-          Ringkasan per Kontak / Orang
+          Ringkasan per Kontak
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="relative sm:col-span-2">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Cari nama kontak, nominal, atau catatan utang..."
+            placeholder="Cari nama kontak, nominal, atau catatan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] focus:outline-hidden focus:border-pink-400"
           />
         </div>
 
-        {/* Direction pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            onClick={() => setFilterDirection('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              filterDirection === 'all'
-                ? 'bg-[var(--color-primary)] text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Semua Arah
-          </button>
-          <button
-            onClick={() => setFilterDirection('piutang')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              filterDirection === 'piutang'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Orang Berutang ke Saya
-          </button>
-          <button
-            onClick={() => setFilterDirection('utang')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              filterDirection === 'utang'
-                ? 'bg-rose-600 text-white'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-            }`}
-          >
-            Saya Berutang ke Orang
-          </button>
-        </div>
+        <select
+          value={filterDirection}
+          onChange={(e) => setFilterDirection(e.target.value as 'all' | 'piutang' | 'utang')}
+          className="px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium text-[var(--text-primary)] cursor-pointer focus:outline-hidden focus:border-pink-400"
+        >
+          <option value="all">Semua Arah Utang</option>
+          <option value="piutang">Orang Berutang (Piutang)</option>
+          <option value="utang">Saya Berutang (Utang)</option>
+        </select>
       </div>
 
       {/* DEBT CARDS: Per Catatan */}
@@ -324,15 +316,15 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                 <div
                   key={debt.id}
                   onClick={() => setSelectedDebt(debt)}
-                  className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-[var(--color-primary)] transition-all cursor-pointer flex flex-col gap-3"
+                  className="p-5 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-soft-sm hover:border-[var(--accent-debts)] transition-all cursor-pointer flex flex-col gap-3 group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
                           isPiutang
-                            ? 'bg-emerald-500/10 text-emerald-600'
-                            : 'bg-rose-500/10 text-rose-600'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                         }`}
                       >
                         {isPiutang ? (
@@ -344,7 +336,7 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
 
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                          <h3 className="font-bold text-sm text-[var(--text-primary)]">
                             {person?.nama || 'Kontak Tanpa Nama'}
                           </h3>
                           <span
@@ -362,7 +354,7 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                           </span>
                         </div>
 
-                        <span className="text-xs text-slate-500 block mt-0.5">
+                        <span className="text-xs text-[var(--text-muted)] block mt-0.5 tabular-nums">
                           {isPiutang ? 'Berutang ke saya' : 'Saya berutang'} •{' '}
                           {debt.tanggal.slice(0, 10)}
                         </span>
@@ -370,8 +362,8 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                     </div>
 
                     <div className="text-right">
-                      <span className="text-xs text-slate-400 block">Sisa Utang:</span>
-                      <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                      <span className="text-xs text-[var(--text-muted)] block">Sisa Utang:</span>
+                      <span className="text-base font-extrabold text-[var(--text-primary)] tabular-nums">
                         {formatRupiah(sisa, settings.privacyMode)}
                       </span>
                     </div>
@@ -379,20 +371,20 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
 
                   {/* Progress bar */}
                   <div>
-                    <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-                      <span>
+                    <div className="flex justify-between text-[11px] text-[var(--text-secondary)] mb-1">
+                      <span className="tabular-nums">
                         Dibayar: {formatRupiah(totalDibayar, settings.privacyMode)} dari{' '}
                         {formatRupiah(debt.pokok, settings.privacyMode)}
                       </span>
-                      <span className="font-semibold">{persentaseLunas}%</span>
+                      <span className="font-semibold tabular-nums">{persentaseLunas}%</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           persentaseLunas === 100
                             ? 'bg-emerald-500'
                             : isPiutang
-                            ? 'bg-[var(--color-primary)]'
+                            ? 'bg-[var(--accent-debts)]'
                             : 'bg-rose-500'
                         }`}
                         style={{ width: `${persentaseLunas}%` }}
@@ -401,9 +393,9 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                   </div>
 
                   {/* Footer details: Due date & share reminder button */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
-                    <span className="text-slate-500 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <div className="flex items-center justify-between pt-2 border-t border-[var(--border-color)] text-xs">
+                    <span className="text-[var(--text-secondary)] flex items-center gap-1.5 tabular-nums">
+                      <Calendar className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                       <span>
                         Jatuh tempo: {debt.jatuhTempo ? debt.jatuhTempo.slice(0, 10) : 'Tidak ada'}
                       </span>
@@ -415,7 +407,7 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                           e.stopPropagation();
                           handleShareReminder(debt);
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 font-medium hover:bg-emerald-100"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 font-medium hover:bg-emerald-500/20 cursor-pointer"
                       >
                         <Share2 className="w-3.5 h-3.5" />
                         <span>Bagikan Pengingat</span>
@@ -426,12 +418,12 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
               );
             })
           ) : (
-            <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center">
-              <BookOpen className="w-8 h-8 text-slate-400 mb-2" />
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <div className="p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center shadow-soft-sm">
+              <BookOpen className="w-8 h-8 text-[var(--text-muted)] mb-2" />
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
                 Belum ada catatan utang
               </p>
-              <p className="text-xs text-slate-500 mt-1 mb-4">
+              <p className="text-xs text-[var(--text-muted)] mt-1 mb-4">
                 Catat piutang atau utang untuk mulai melacak cicilan dengan rapi.
               </p>
               <SoundButton size="sm" onClick={() => onOpenQuickAction('debt')}>
@@ -461,17 +453,17 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
             return (
               <div
                 key={personId}
-                className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between"
+                className="p-5 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-soft-sm flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-700 dark:text-slate-300">
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--bg-subtle)] flex items-center justify-center font-bold text-[var(--text-secondary)]">
                     <User className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                    <h3 className="font-bold text-sm text-[var(--text-primary)]">
                       {person?.nama || 'Kontak Tanpa Nama'}
                     </h3>
-                    <span className="text-xs text-slate-500 block">
+                    <span className="text-xs text-[var(--text-muted)] block tabular-nums">
                       {personDebts.length} Catatan Utang • Pokok Total:{' '}
                       {formatRupiah(totalPokok, settings.privacyMode)}
                     </span>
@@ -479,8 +471,8 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs text-slate-400 block">Total Sisa:</span>
-                  <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                  <span className="text-xs text-[var(--text-muted)] block">Total Sisa:</span>
+                  <span className="text-base font-extrabold text-[var(--text-primary)] tabular-nums">
                     {formatRupiah(totalSisa, settings.privacyMode)}
                   </span>
                 </div>
@@ -510,47 +502,47 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
             return (
               <div className="space-y-4">
                 <div className="text-center py-2">
-                  <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
+                  <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">
                     Sisa Utang
                   </span>
-                  <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+                  <h2 className="text-3xl font-extrabold text-[var(--text-primary)] mt-1 tabular-nums">
                     {formatRupiah(sisa, settings.privacyMode)}
                   </h2>
                   <div className="flex items-center justify-center gap-2 mt-2">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--bg-subtle)] text-[var(--text-secondary)] tabular-nums">
                       Pokok: {formatRupiah(selectedDebt.pokok, settings.privacyMode)}
                     </span>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700">
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
                       Lunas: {persentaseLunas}%
                     </span>
                   </div>
                 </div>
 
                 {/* Info Card */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl space-y-2 text-xs">
+                <div className="bg-[var(--bg-subtle)] p-4 rounded-2xl space-y-2 text-xs border border-[var(--border-color)]">
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Kontak</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--text-secondary)]">Kontak</span>
+                    <span className="font-semibold text-[var(--text-primary)]">
                       {person?.nama} {person?.kontak ? `(${person.kontak})` : ''}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Arah</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--text-secondary)]">Arah</span>
+                    <span className="font-semibold text-[var(--text-primary)]">
                       {selectedDebt.arah === 'piutang'
                         ? 'Orang Berutang ke Saya'
                         : 'Saya Berutang ke Orang'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Tanggal Mulai</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--text-secondary)]">Tanggal Mulai</span>
+                    <span className="font-semibold text-[var(--text-primary)] tabular-nums">
                       {selectedDebt.tanggal.slice(0, 10)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Jatuh Tempo</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-[var(--text-secondary)]">Jatuh Tempo</span>
+                    <span className="font-semibold text-[var(--text-primary)] tabular-nums">
                       {selectedDebt.jatuhTempo ? selectedDebt.jatuhTempo.slice(0, 10) : '-'}
                     </span>
                   </div>
@@ -584,35 +576,38 @@ export const DebtsPage: React.FC<DebtsPageProps> = ({
 
                 {/* Riwayat Cicilan Timeline */}
                 <div>
-                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                  <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider mb-3">
                     Riwayat Pembayaran & Cicilan ({payments.length})
                   </h4>
 
                   {payments.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="relative pl-6 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[var(--border-color)]">
                       {payments.map((p) => (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs"
+                          className="relative flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs"
                         >
+                          <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          </div>
                           <div>
-                            <span className="font-bold text-slate-900 dark:text-slate-100 block">
+                            <span className="font-bold text-[var(--text-primary)] block tabular-nums">
                               {formatRupiah(p.nominal, settings.privacyMode)}
                             </span>
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-[11px] text-[var(--text-muted)] tabular-nums">
                               {p.tanggal.slice(0, 10)} {p.catatan ? `• ${p.catatan}` : ''}
                             </span>
                           </div>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic">Belum ada riwayat cicilan.</p>
+                    <p className="text-xs text-[var(--text-muted)] italic">Belum ada riwayat cicilan.</p>
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="pt-2 border-t border-[var(--border-color)]">
                   <SoundButton
                     variant="danger"
                     className="w-full"

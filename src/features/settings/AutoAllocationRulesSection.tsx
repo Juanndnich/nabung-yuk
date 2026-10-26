@@ -168,15 +168,15 @@ export const AutoAllocationRulesSection: React.FC<AutoAllocationRulesSectionProp
   const pocketMap = new Map<string, Pocket>(pockets.map((p) => [p.id, p]));
 
   return (
-    <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+    <div className="p-5 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <Split className="w-5 h-5 text-indigo-500" />
           <div>
-            <h2 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+            <h2 className="font-bold text-sm text-[var(--text-primary)]">
               Aturan Bagi Otomatis (Pos Tabungan)
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--text-muted)]">
               Bagi pemasukan secara otomatis ke beberapa pos saat uang masuk
             </p>
           </div>
@@ -186,7 +186,7 @@ export const AutoAllocationRulesSection: React.FC<AutoAllocationRulesSectionProp
           <select
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold"
+            className="px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-semibold text-[var(--text-primary)] cursor-pointer"
           >
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>

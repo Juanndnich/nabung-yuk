@@ -263,17 +263,17 @@ export const PocketsView: React.FC<PocketsViewProps> = ({
       </div>
 
       {/* Hero: Belum Dialokasikan Banner */}
-      <div className="p-5 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg relative overflow-hidden">
+      <div className="p-5 rounded-3xl bg-linear-to-br from-blue-700 via-indigo-700 to-pink-600 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold mb-1">
-              <Inbox className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-2 text-blue-100 text-xs font-semibold mb-1">
+              <Inbox className="w-4 h-4 text-pink-300" />
               <span>Pos Sistem: Belum Dialokasikan</span>
             </div>
-            <div className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            <div className="text-2xl md:text-3xl font-extrabold tracking-tight tabular-nums">
               {formatRupiah(unallocatedBalance, settings.privacyMode)}
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-md">
+            <p className="text-xs text-blue-100 mt-1 max-w-md">
               Sisa saldo dari tabungan <strong>{currentAccount.nama}</strong> yang belum disisihkan ke pos kebutuhan mana pun.
             </p>
           </div>
@@ -288,7 +288,7 @@ export const PocketsView: React.FC<PocketsViewProps> = ({
                   setSelectedSourcePosId(sysPocket?.id);
                   setMoveModalOpen(true);
                 }}
-                className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                className="bg-white/20 text-white border border-white/30 hover:bg-white/30 backdrop-blur-xs"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Bagi ke Pos Kebutuhan</span>
@@ -299,8 +299,8 @@ export const PocketsView: React.FC<PocketsViewProps> = ({
 
         {/* Suggestion pill if unallocated balance is high */}
         {unallocatedBalance > 500000 && userPockets.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-slate-700/60 flex items-center gap-2 text-xs text-emerald-300">
-            <Sparkles className="w-4 h-4 shrink-0 text-emerald-400" />
+          <div className="mt-4 pt-3 border-t border-white/20 flex items-center gap-2 text-xs text-blue-100">
+            <Sparkles className="w-4 h-4 shrink-0 text-pink-300" />
             <span>
               Saldo belum dialokasikan terkumpul cukup banyak. Pertimbangkan untuk membaginya ke pos target atau pos belanja Anda.
             </span>

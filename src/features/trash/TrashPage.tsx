@@ -80,7 +80,7 @@ export const TrashPage: React.FC<TrashPageProps> = ({ trashItems, onRefresh }) =
           {trashItems.map((item) => (
             <div
               key={item.id}
-              className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-4"
+              className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex items-center justify-between gap-4"
             >
               <div>
                 <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ export const TrashPage: React.FC<TrashPageProps> = ({ trashItems, onRefresh }) =
           ))}
         </div>
       ) : (
-        <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center flex flex-col items-center">
+        <div className="p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center">
           <Trash2 className="w-8 h-8 text-slate-400 mb-2" />
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
             Tempat sampah kosong

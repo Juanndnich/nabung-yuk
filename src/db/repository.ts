@@ -34,7 +34,7 @@ import {
 export const DEFAULT_SETTINGS: AppSettings = {
   id: 'current',
   theme: 'system',
-  colorPreset: 'teal',
+  colorPreset: 'blue_pink',
   fontFamily: 'Plus Jakarta Sans',
   fontSize: 'medium',
   density: 'comfortable',

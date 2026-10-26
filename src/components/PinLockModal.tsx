@@ -108,7 +108,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 p-6 select-none">
       <div className="w-full max-w-xs flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4 overflow-hidden border border-slate-800">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mb-4 overflow-hidden border border-[var(--border-color)]">
           {settings.customAppIcon ? (
             <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
           ) : (
@@ -136,7 +136,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
               className={`w-3.5 h-3.5 rounded-full transition-all ${
                 pin.length > idx
                   ? 'bg-[var(--color-primary)] scale-110 shadow-sm'
-                  : 'bg-slate-800 border border-slate-700'
+                  : 'bg-zinc-800 border border-[var(--border-color)]'
               }`}
             />
           ))}
@@ -162,7 +162,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
               key={digit}
               disabled={lockoutRemaining > 0}
               onClick={() => handleKeyPress(digit)}
-              className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 text-white font-semibold text-2xl hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center disabled:opacity-30 cursor-pointer"
+              className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[var(--border-color)] text-white font-semibold text-2xl hover:bg-zinc-800 active:scale-95 transition-all flex items-center justify-center disabled:opacity-30 cursor-pointer"
             >
               {digit}
             </button>
@@ -173,7 +173,7 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({
           <button
             disabled={lockoutRemaining > 0}
             onClick={() => handleKeyPress('0')}
-            className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 text-white font-semibold text-2xl hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center disabled:opacity-30 cursor-pointer"
+            className="w-16 h-16 rounded-2xl bg-zinc-900 border border-[var(--border-color)] text-white font-semibold text-2xl hover:bg-zinc-800 active:scale-95 transition-all flex items-center justify-center disabled:opacity-30 cursor-pointer"
           >
             0
           </button>

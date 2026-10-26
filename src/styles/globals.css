@@ -1,39 +1,179 @@
 @import "tailwindcss";
-@import "@fontsource/plus-jakarta-sans/400.css";
-@import "@fontsource/plus-jakarta-sans/500.css";
-@import "@fontsource/plus-jakarta-sans/600.css";
-@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
 
-@layer base {
-  :root {
-    --color-primary: #0d9488;
-    --color-primary-rgb: 13, 148, 136;
-    --bg-surface: #f8fafc;
-    --bg-card: #ffffff;
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-  }
+/* Design Tokens & CSS Variables - Nubung Yuk */
+:root {
+  /* Palet Default: Terang - Minimalis Hitam Putih dengan Border Pink Soft */
+  --bg-page: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-subtle: #faf5f8;
+  --bg-overlay: rgba(9, 9, 11, 0.4);
 
-  .dark {
-    --color-primary: #14b8a6;
-    --color-primary-rgb: 20, 184, 166;
-    --bg-surface: #090d16;
-    --bg-card: #131926;
-    --border-color: #1e293b;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-  }
+  --border-color: #fbcfe8; /* Soft Pink Hairline Border */
+  --border-subtle: #fce7f3; /* Ultra Soft Pink */
 
-  body {
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    -webkit-tap-highlight-color: transparent;
+  --text-primary: #09090b; /* Rich Crisp Black */
+  --text-secondary: #52525b; /* Zinc 600 */
+  --text-muted: #a1a1aa; /* Zinc 400 */
+  --text-inverse: #ffffff;
+
+  /* Primary Monochrome & Secondary Soft Pink Accent */
+  --color-primary: #09090b;
+  --color-primary-rgb: 9, 9, 11;
+  --color-primary-hover: #27272a;
+  --color-primary-soft: #f4f4f5;
+
+  --color-secondary: #ec4899;
+  --color-secondary-rgb: 236, 72, 153;
+  --color-secondary-hover: #db2777;
+  --color-secondary-soft: #fdf2f8;
+
+  /* Menu Accent Colors (Sophisticated & Muted) */
+  --accent-home: #09090b;
+  --accent-accounts: #0d9488;
+  --accent-debts: #d97706;
+  --accent-goals: #8b5cf6;
+  --accent-budgets: #0284c7;
+  --accent-recurring: #10b981;
+  --accent-stats: #2563eb;
+  --accent-settings: #52525b;
+  --accent-about: #ec4899;
+
+  /* Radius Tokens */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-pill: 9999px;
+
+  /* Shadows - Minimalist & Soft */
+  --shadow-soft-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  --shadow-soft-md: 0 4px 16px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-soft-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.07), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
+  --shadow-floating: 0 14px 34px -4px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.04);
+  --shadow-glow-blue: 0 6px 20px -3px rgba(37, 99, 235, 0.2);
+  --shadow-glow-pink: 0 6px 20px -3px rgba(236, 72, 153, 0.2);
+
+  /* Animation Easing & Durations */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+}
+
+/* Palet Default: Gelap - Deep Dark dengan Border Pink Soft */
+.dark {
+  --bg-page: #09090b; /* True Rich Black */
+  --bg-surface: #121215; /* Clean Dark Surface */
+  --bg-card: #141418; /* Dark Card */
+  --bg-subtle: #1c1822; /* Subtle Plum Wash */
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+
+  --border-color: #3b1d2e; /* Soft Deep Pink-Burgundy Border */
+  --border-subtle: #2b1422;
+
+  --text-primary: #fafafa; /* Crisp White */
+  --text-secondary: #a1a1aa; /* Zinc 400 */
+  --text-muted: #71717a; /* Zinc 500 */
+  --text-inverse: #09090b;
+
+  --color-primary: #fafafa;
+  --color-primary-rgb: 250, 250, 250;
+  --color-primary-hover: #e4e4e7;
+  --color-primary-soft: #27272a;
+
+  --color-secondary: #f472b6;
+  --color-secondary-rgb: 244, 114, 182;
+  --color-secondary-hover: #f9a8d4;
+  --color-secondary-soft: #831843;
+
+  --shadow-soft-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --shadow-soft-md: 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  --shadow-soft-lg: 0 16px 36px -6px rgba(0, 0, 0, 0.7);
+  --shadow-floating: 0 14px 40px -4px rgba(0, 0, 0, 0.8);
+  --shadow-glow-blue: 0 6px 20px -3px rgba(59, 130, 246, 0.25);
+  --shadow-glow-pink: 0 6px 20px -3px rgba(244, 114, 182, 0.25);
+}
+
+/* Zero Flash of Unstyled Theme - CSS System Preference Fallback before JS loads */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg-page: #09090b;
+    --bg-surface: #121215;
+    --bg-card: #141418;
+    --bg-subtle: #1c1822;
+    --bg-overlay: rgba(0, 0, 0, 0.8);
+
+    --border-color: #3b1d2e;
+    --border-subtle: #2b1422;
+
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --text-inverse: #09090b;
+
+    --color-primary: #fafafa;
+    --color-primary-rgb: 250, 250, 250;
+    --color-primary-hover: #e4e4e7;
+    --color-primary-soft: #27272a;
+
+    --color-secondary: #f472b6;
+    --color-secondary-rgb: 244, 114, 182;
+    --color-secondary-hover: #f9a8d4;
+    --color-secondary-soft: #831843;
   }
 }
 
-/* Minimum 44px touch targets on mobile */
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-normal) var(--ease-smooth),
+              color var(--duration-normal) var(--ease-smooth);
+}
+
+/* Minimalist Sleek Custom Scrollbar - Soft Pink Thumb */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f472b6;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* Tabular Numerals for Currency & Counts */
+.tabular-nums,
+[data-tabular-nums] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "cv05" 1;
+}
+
+/* Minimum 44px Touch Targets */
 button,
 a,
 input,
@@ -42,7 +182,7 @@ textarea {
   min-height: 44px;
 }
 
-/* Reduced motion preference support */
+/* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -54,7 +194,75 @@ textarea {
   }
 }
 
-/* Print Stylesheet for PDF and printing */
+/* Pure CSS Pre-JS Initial Splash Screen */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  z-index: 9999;
+  user-select: none;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.splash-logo {
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft-sm);
+  animation: splashPulse 2s ease-in-out infinite;
+}
+
+.splash-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+.splash-bar {
+  width: 140px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.splash-progress {
+  width: 40%;
+  height: 100%;
+  background: #ec4899;
+  border-radius: var(--radius-pill);
+  animation: splashTrack 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes splashPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes splashTrack {
+  0% { transform: translateX(-30%); width: 30%; }
+  100% { transform: translateX(200%); width: 60%; }
+}
+
+/* Print Stylesheet */
 @media print {
   nav,
   .no-print,

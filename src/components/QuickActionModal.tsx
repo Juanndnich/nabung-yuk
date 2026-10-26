@@ -430,7 +430,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
               <select
                 value={tabunganId}
                 onChange={(e) => setTabunganId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
               >
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
@@ -449,7 +449,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                 <select
                   value={posId}
                   onChange={(e) => setPosId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
                 >
                   {accountPockets.map((p) => {
                     const b = currentAcc ? calculatePocketBalance(p, currentAcc, transactions) : 0;
@@ -472,7 +472,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                 <select
                   value={targetTabunganId}
                   onChange={(e) => setTargetTabunganId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
                 >
                   {accounts
                     .filter((a) => a.id !== tabunganId)
@@ -588,7 +588,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   <select
                     value={selectedRuleId}
                     onChange={(e) => setSelectedRuleId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-medium"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] font-medium"
                   >
                     {accountRules.map((r) => (
                       <option key={r.id} value={r.id}>
@@ -649,7 +649,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                     <select
                       value={item.posId}
                       onChange={(e) => handleUpdateManualSplit(idx, { posId: e.target.value })}
-                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-medium"
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs font-medium"
                     >
                       {accountPockets.map((p) => (
                         <option key={p.id} value={p.id}>
@@ -737,7 +737,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                 <select
                   value={kategoriId}
                   onChange={(e) => setKategoriId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
                 >
                   <option value="">Pilih Kategori (Opsional)</option>
                   {categories
@@ -759,7 +759,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                 type="date"
                 value={tanggal}
                 onChange={(e) => setTanggal(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer"
               />
             </div>
           </div>
@@ -807,7 +807,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   <select
                     value={orangId}
                     onChange={(e) => setOrangId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   >
                     {people.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -823,7 +823,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                       placeholder="Ketik nama orang baru..."
                       value={newPersonName}
                       onChange={(e) => setNewPersonName(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                      className="w-full px-3.5 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     />
                   )}
                 </div>
@@ -833,7 +833,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   placeholder="Ketik nama orang / kontak..."
                   value={newPersonName}
                   onChange={(e) => setNewPersonName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
               )}
             </div>
@@ -847,7 +847,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   type="date"
                   value={tanggal}
                   onChange={(e) => setTanggal(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm"
                 />
               </div>
               <div>
@@ -858,7 +858,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   type="date"
                   value={jatuhTempo}
                   onChange={(e) => setJatuhTempo(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm"
                 />
               </div>
             </div>
@@ -882,7 +882,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                   <select
                     value={tabunganId}
                     onChange={(e) => setTabunganId(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-xs"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -906,7 +906,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
             placeholder="Contoh: Belanja mingguan, Makan siang kantor, Gaji freelance"
             value={catatan}
             onChange={(e) => setCatatan(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
         </div>
 
@@ -932,7 +932,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
                 </button>
               </div>
             ) : (
-              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all">
+              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[var(--border-color)] text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] cursor-pointer transition-all">
                 <Upload className="w-4 h-4 text-slate-500" />
                 <span>Unggah Foto Struk</span>
                 <input

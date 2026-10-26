@@ -22,6 +22,7 @@ import { applyTheme } from './styles/theme';
 import { soundService } from './services/audio';
 import { ToastProvider } from './context/ToastContext';
 import { Navigation } from './components/Navigation';
+import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { QuickActionModal } from './components/QuickActionModal';
 import { PinLockModal } from './components/PinLockModal';
 import { UpdateBanner } from './components/UpdateBanner';
@@ -59,8 +60,12 @@ export const AppContent: React.FC = () => {
 
   // UI state
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(25);
+  const [loadingStepLabel, setLoadingStepLabel] = useState('Memuat preferensi & tema...');
   const [isLocked, setIsLocked] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  const isInitialBoot = useRef(true);
 
   // Quick Action FAB Modal
   const [quickActionModalOpen, setQuickActionModalOpen] = useState(false);
@@ -82,9 +87,14 @@ export const AppContent: React.FC = () => {
 
   const lastActiveRef = useRef<number>(Date.now());
 
-  // Load all data from IndexedDB
+  // Load all data from IndexedDB with real step reporting
   const refreshData = useCallback(async () => {
     try {
+      if (isInitialBoot.current) {
+        setLoadingProgress(40);
+        setLoadingStepLabel('Membuka database IndexedDB lokal...');
+      }
+
       const [
         s,
         accs,
@@ -117,6 +127,11 @@ export const AppContent: React.FC = () => {
         repository.getAutoAllocationRules(),
       ]);
 
+      if (isInitialBoot.current) {
+        setLoadingProgress(75);
+        setLoadingStepLabel('Menerapkan tema visual & preferensi...');
+      }
+
       setSettings(s);
       setAccounts(accs);
       setTransactions(txs);
@@ -134,6 +149,11 @@ export const AppContent: React.FC = () => {
 
       // Apply theme & sound config
       applyTheme(s.theme, s.colorPreset, s.customAccent);
+
+      if (isInitialBoot.current) {
+        setLoadingProgress(90);
+        setLoadingStepLabel('Menginisialisasi synthesizer Web Audio...');
+      }
       soundService.init(s.soundVolume, s.soundMuted, s.soundStyle, s.hapticsEnabled);
 
       // Trigger onboarding on first run if not completed
@@ -145,13 +165,33 @@ export const AppContent: React.FC = () => {
       if (s.pinEnabled && s.pinHash) {
         setIsLocked(true);
       }
+
+      if (isInitialBoot.current) {
+        setLoadingProgress(100);
+        setLoadingStepLabel('Nubung Yuk siap digunakan.');
+      }
+    } catch (err) {
+      console.error('Error refreshing data from IndexedDB:', err);
     } finally {
-      setLoading(false);
+      if (isInitialBoot.current) {
+        setTimeout(() => {
+          setLoading(false);
+          isInitialBoot.current = false;
+        }, 150);
+      }
     }
   }, []);
 
   useEffect(() => {
     refreshData();
+
+    // Absolute fallback: loading screen guaranteed to close even on slow storage
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      isInitialBoot.current = false;
+    }, 1200);
+
+    return () => clearTimeout(safetyTimer);
   }, [refreshData]);
 
   // Handle user activity & auto-lock
@@ -212,24 +252,18 @@ export const AppContent: React.FC = () => {
     setQuickActionModalOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white select-none">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)] flex items-center justify-center animate-pulse">
-            <span className="text-xl font-bold">N</span>
-          </div>
-          <span className="text-xs text-slate-400 font-semibold tracking-wide">
-            Memuat Nubung Yuk...
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
-      {/* Navigation Header, Drawer, Desktop Sidebar, and Mobile Bottom Bar */}
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] flex flex-col antialiased selection:bg-pink-500 selection:text-white transition-colors">
+      {/* App Real Progress Loading Screen with Animated Heart */}
+      <AppLoadingScreen
+        isVisible={loading}
+        progress={loadingProgress}
+        stepLabel={loadingStepLabel}
+        customIcon={settings.customAppIcon}
+        reducedMotion={settings.reducedMotion}
+      />
+
+      {/* Navigation Header, Drawer, Desktop Sidebar, and Floating Mobile Bottom Bar */}
       <Navigation
         settings={settings}
         onTogglePrivacy={handleTogglePrivacy}

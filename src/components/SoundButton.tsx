@@ -31,15 +31,15 @@ export const SoundButton: React.FC<SoundButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-[var(--color-primary)] text-white hover:brightness-110 shadow-sm focus:ring-[var(--color-primary)]',
+      'bg-[var(--text-primary)] text-[var(--bg-page)] border border-[var(--border-color)] hover:opacity-90 shadow-2xs focus:ring-[var(--color-secondary)]',
     secondary:
-      'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-300 dark:hover:bg-slate-700',
+      'bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card)]',
     outline:
-      'border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800',
+      'border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]',
     ghost:
-      'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60',
+      'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm',
+      'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-2xs',
   }[variant];
 
   const sizeStyles = {

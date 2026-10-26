@@ -39,12 +39,12 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in">
       <div
-        className={`w-full ${maxWidthClass} bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
+        className={`w-full ${maxWidthClass} bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-color)]">
+          <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
           <SoundButton
             variant="ghost"
             size="icon"

@@ -108,3 +108,29 @@ Lint, test, build lulus; fitur diuji lewat alur nyata; tidak ada data palsu pada
 - Sumber ikon dari pengguna ada di public/branding/icon-source.png (disarankan 1024x1024 PNG). Jangan menimpa file ini.
 - Semua ukuran ikon (favicon, PWA 192/512, maskable, apple-touch-icon) dihasilkan dari file sumber lewat skrip build/generator (devDependency saja), bukan ditulis manual.
 - Pengguna juga dapat mengganti ikon dari dalam aplikasi (upload + crop); ikon default tetap file sumber.
+
+## 14. Sistem Desain "Nubung Yuk" (Aturan Permanen)
+
+### Palet & Tema
+- Warna inti: BIRU, PUTIH, PINK. Semua warna didefinisikan sebagai design token (CSS variables) di satu tempat; komponen DILARANG memakai warna hardcode.
+- Terang: latar putih kebiruan lembut, permukaan putih, teks navy gelap, aksen utama biru, aksen sekunder pink.
+- Gelap: latar navy/biru malam pekat (bukan hitam murni), permukaan navy sedikit lebih terang, teks putih kebiruan, aksen biru dan pink dengan saturasi diturunkan agar nyaman di mata. Kontras minimal WCAG AA.
+- Default tema: "Ikuti sistem" (prefers-color-scheme), berubah otomatis saat pengaturan perangkat berubah. Pilihan manual Terang/Gelap tetap ada. Preset warna lain dan warna aksen kustom tetap didukung; palet biru-putih-pink adalah default.
+- Terapkan tema sebelum render pertama agar tidak berkedip.
+
+### Gaya Visual (tidak monoton, tetap clean)
+- Satu sistem desain, tetapi tiap menu punya identitas: warna aksen sendiri (token turunan dari palet), header berlatar gradasi halus, dan ilustrasi/ikon empty state sendiri.
+- Kartu bersudut besar (radius 16-24px), bayangan lembut berlapis, permukaan kaca lembut (blur ringan, hanya bila tidak menurunkan performa), gradasi halus, banyak ruang napas. Hindari tampilan template/generik dan hindari elemen berlebihan.
+- Motif hati (ikon vektor lucide Heart) dipakai tipis dan konsisten sebagai identitas: loading, empty state, pencapaian, favicon header. DILARANG emoji.
+- Tipografi: font lokal Poppins (@fontsource/poppins) dengan hierarki jelas, modern, dan minimalis; angka uang memakai tabular numerals.
+- Riwayat dan daftar berkategori: setiap kategori punya chip berwarna dan ikon, grup per hari dengan header lengket, subtotal jelas, pemisah halus.
+- Navigasi bawah standar aplikasi mobile profesional (docked bottom navigation) dengan indikator aktif beranimasi serta FAB aksi cepat.
+
+### Animasi
+- Animasi halus, singkat, dan bermakna (transisi halaman, shared-element bila wajar, sheet naik dengan spring lembut, kartu muncul bertahap, angka menghitung naik, progres mengalir, mikro-interaksi tombol). Hanya properti transform/opacity agar tetap 60fps.
+- Hormati prefers-reduced-motion dan pengaturan "animasi dikurangi" di aplikasi.
+- Loading screen: bar progres animasi dengan ikon hati yang bergerak mengikuti progres dan berdenyut halus. Tampil saat aplikasi dibuka (inisialisasi database, tema, suara) dan tidak boleh lebih lama dari yang dibutuhkan (tanpa delay buatan lebih dari ±300ms agar terasa mulus).
+
+### Audit Berkala
+- Setiap perubahan besar: jalankan lint, typecheck, test, build, npm audit, dan pemeriksaan aksesibilitas/performa. Laporkan temuan per tingkat keparahan (Kritis/Tinggi/Sedang/Rendah) dengan status diperbaiki atau belum.
+- Jangan menutupi masalah; jangan menonaktifkan aturan lint/keamanan atau test hanya agar lulus.

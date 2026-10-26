@@ -74,8 +74,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
   return (
     <div className="space-y-6 pb-24 max-w-5xl mx-auto">
       {/* Hero Header */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-3xl bg-[var(--color-primary)] text-white flex items-center justify-center mb-3 shadow-md overflow-hidden">
+      <div className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-soft-sm flex flex-col items-center text-center">
+        <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-blue-600 to-pink-500 text-white flex items-center justify-center mb-3 shadow-md overflow-hidden">
           {settings?.customAppIcon ? (
             <img src={settings.customAppIcon} alt="Logo" className="w-full h-full object-cover" />
           ) : (
@@ -89,11 +89,11 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
             />
           )}
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">Nubung Yuk</h1>
-        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mt-1 mb-2">
-          Versi 1.1.0 (Pos Tabungan & PWA Terkini)
+        <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Nubung Yuk</h1>
+        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-secondary)] mt-1 mb-2">
+          Versi 1.2.0 (Desain Estetik, Animasi Halus & Suara)
         </span>
-        <p className="text-xs text-slate-500 max-w-md leading-relaxed">
+        <p className="text-xs text-[var(--text-muted)] max-w-md leading-relaxed">
           Aplikasi pencatat tabungan pribadi dan buku utang offline-first, mobile-first, tanpa akun,
           dan tanpa server. Hak privasi penuh untuk keuangan Anda.
         </p>
@@ -109,33 +109,33 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
       {/* Accordion Sections */}
       <div className="space-y-3">
         {/* PANDUAN PENGGUNAAN */}
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden shadow-soft-sm">
           <button
             onClick={() => toggle('panduan')}
-            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-slate-900 dark:text-slate-100 cursor-pointer"
+            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-[var(--text-primary)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
           >
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
               <span>Panduan Lengkap Cara Pemakaian</span>
             </div>
             {openSection === 'panduan' ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
+              <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
             )}
           </button>
 
           {openSection === 'panduan' && (
-            <div className="p-5 pt-0 space-y-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+            <div className="p-5 pt-0 space-y-3 border-t border-[var(--border-color)] text-xs">
               {guideSteps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 space-y-1"
+                  className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1"
                 >
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">
+                  <h4 className="font-bold text-[var(--text-primary)] text-xs">
                     {step.title}
                   </h4>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{step.desc}</p>
+                  <p className="text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
                 </div>
               ))}
             </div>
@@ -143,24 +143,24 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
         </div>
 
         {/* TIPS KEAMANAN & CADANGAN */}
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden shadow-soft-sm">
           <button
             onClick={() => toggle('keamanan')}
-            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-slate-900 dark:text-slate-100 cursor-pointer"
+            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-[var(--text-primary)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
           >
             <div className="flex items-center gap-2.5">
               <Lock className="w-4 h-4 text-emerald-500" />
               <span>Tips Keamanan & Rekomendasi Backup</span>
             </div>
             {openSection === 'keamanan' ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
+              <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
             )}
           </button>
 
           {openSection === 'keamanan' && (
-            <div className="p-5 pt-0 space-y-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <div className="p-5 pt-0 space-y-2.5 border-t border-[var(--border-color)] text-xs leading-relaxed text-[var(--text-secondary)]">
               <p>
                 • <strong>Cadangkan Setiap Minggu:</strong> Lakukan ekspor JSON di menu Pengaturan
                 dan simpan di folder aman Anda.
@@ -178,28 +178,28 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
         </div>
 
         {/* FAQ */}
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden shadow-soft-sm">
           <button
             onClick={() => toggle('faq')}
-            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-slate-900 dark:text-slate-100 cursor-pointer"
+            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-[var(--text-primary)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
           >
             <div className="flex items-center gap-2.5">
               <HelpCircle className="w-4 h-4 text-sky-500" />
               <span>Pertanyaan yang Sering Diajukan (FAQ)</span>
             </div>
             {openSection === 'faq' ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
+              <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
             )}
           </button>
 
           {openSection === 'faq' && (
-            <div className="p-5 pt-0 space-y-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+            <div className="p-5 pt-0 space-y-3 border-t border-[var(--border-color)] text-xs">
               {faqs.map((f, i) => (
-                <div key={i} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 space-y-1">
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100">{f.q}</h4>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{f.a}</p>
+                <div key={i} className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1">
+                  <h4 className="font-bold text-[var(--text-primary)]">{f.q}</h4>
+                  <p className="text-[var(--text-secondary)] leading-relaxed">{f.a}</p>
                 </div>
               ))}
             </div>
@@ -207,24 +207,24 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
         </div>
 
         {/* OPEN SOURCE LICENSES */}
-        <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] overflow-hidden shadow-soft-sm">
           <button
             onClick={() => toggle('lisensi')}
-            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-slate-900 dark:text-slate-100 cursor-pointer"
+            className="w-full p-4 flex items-center justify-between text-left font-bold text-sm text-[var(--text-primary)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors"
           >
             <div className="flex items-center gap-2.5">
               <FileText className="w-4 h-4 text-purple-500" />
               <span>Daftar Lisensi Pustaka Pihak Ketiga</span>
             </div>
             {openSection === 'lisensi' ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
+              <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />
             )}
           </button>
 
           {openSection === 'lisensi' && (
-            <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-800/80 text-xs text-slate-500 space-y-2">
+            <div className="p-5 pt-0 border-t border-[var(--border-color)] text-xs text-[var(--text-muted)] space-y-2">
               <p>Nubung Yuk dibangun menggunakan pustaka perangkat lunak bebas & sumber terbuka:</p>
               <ul className="list-disc pl-5 space-y-1 font-mono text-[11px]">
                 <li>React 19 & React DOM (MIT)</li>
@@ -233,6 +233,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onRestartTour })
                 <li>Lucide React (ISC)</li>
                 <li>Motion / Framer Motion (MIT)</li>
                 <li>Recharts (MIT)</li>
+                <li>Canvas Confetti (ISC)</li>
                 <li>React Router (MIT)</li>
                 <li>Zod (MIT)</li>
                 <li>Plus Jakarta Sans Font (OFL)</li>
